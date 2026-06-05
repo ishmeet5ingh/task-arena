@@ -1,8 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Edit3, Keyboard, Plus, Trash2, Volume2 } from "lucide-react";
-import { CSSProperties, useEffect, useMemo, useState } from "react";
+import { Bell, Check, CircleDot, Edit3, Keyboard, Plus, Trash2 } from "lucide-react";
+import { CSSProperties, PointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -16,7 +16,9 @@ const IST_OFFSET_MINUTES = 330;
 const slots = Array.from({ length: 12 }, (_, index) => ({
   index,
   x: 17 + (index % 4) * 22,
-  y: 21 + Math.floor(index / 4) * 23
+  y: 30 + Math.floor(index / 4) * 21,
+  mobileX: 18 + (index % 3) * 32,
+  mobileY: 25 + Math.floor(index / 3) * 17
 }));
 
 function secondsRemaining(task?: ArenaTask | null) {
@@ -26,10 +28,10 @@ function secondsRemaining(task?: ArenaTask | null) {
 }
 
 function statusGlow(status?: ArenaTask["status"]) {
-  if (status === "completed") return "border-lime-300/70 bg-lime-400/20 shadow-gold";
-  if (status === "overdue") return "border-rose-300/70 bg-rose-500/20 shadow-redglow";
-  if (status === "active") return "border-cyan-300/80 bg-cyan-300/20 shadow-neon";
-  return "border-slate-400/35 bg-slate-800/90";
+  if (status === "completed") return "surface-slot-completed";
+  if (status === "overdue") return "surface-slot-overdue";
+  if (status === "active") return "surface-slot-active";
+  return "surface-slot-empty";
 }
 
 function secondsUntilIndianDayEnds() {
@@ -187,19 +189,19 @@ export function GameArena() {
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
       <section className="glass overflow-hidden rounded-lg border-cyan-300/20">
-        <div className="relative flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/60 px-4 py-3">
+        <div className="relative flex flex-wrap items-center justify-between gap-2 border-b border-slate-700/60 px-3 py-3 sm:gap-3 sm:px-4">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/70 to-transparent" />
           <div>
-            <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/80">Arena HUD</p>
-            <h1 className="flex flex-wrap items-baseline gap-3 text-xl font-black text-white">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-200/80 sm:text-xs sm:tracking-[0.24em]">Arena HUD</p>
+            <h1 className="flex flex-wrap items-baseline gap-2 text-lg font-black text-white sm:gap-3 sm:text-xl">
               <span>{user?.name ?? "Pilot"}</span>
               <DayCountdown />
             </h1>
-            <div className="mt-2 h-1.5 w-48 overflow-hidden rounded-full bg-slate-900">
+            <div className="mt-2 h-1.5 w-36 overflow-hidden rounded-full bg-slate-900 sm:w-48">
               <div className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-lime-300" style={{ width: `${levelProgress}%` }} />
             </div>
           </div>
-          <div className="grid w-full grid-cols-2 gap-2 text-sm sm:w-auto md:grid-cols-5">
+          <div className="grid w-full grid-cols-5 gap-1.5 text-xs sm:gap-2 sm:text-sm md:w-auto">
             <HudStat label="Level" value={user?.level ?? 1} />
             <HudStat label="Points" value={user?.totalRewardPoints ?? 0} />
             <HudStat label="Done" value={completed} />
@@ -208,12 +210,12 @@ export function GameArena() {
           </div>
         </div>
 
-        <div className="cinematic-arena relative min-h-[560px] overflow-hidden bg-slate-950 scanline sm:min-h-[640px]">
+        <div className="cinematic-arena relative min-h-[500px] overflow-hidden bg-slate-950 scanline sm:min-h-[640px]">
           <div className="arena-skyline" />
           <div className="arena-light arena-light-left" />
           <div className="arena-light arena-light-right" />
           <div className="arena-horizon" />
-          <div className="arena-floor perspective-stage">
+          <div className="arena-floor">
             <div className="arena-floor-core arena-grid" />
           </div>
           <div className="arena-depth-fog" />
@@ -225,7 +227,8 @@ export function GameArena() {
               left: `${slot.x}%`,
               top: `${slot.y}%`,
               zIndex: Math.round(slot.y),
-              "--crate-depth": `${18 + Math.floor(slot.y / 6)}px`
+              "--mobile-left": `${slot.mobileX}%`,
+              "--mobile-top": `${slot.mobileY}%`
             } as CSSProperties;
             return (
               <button
@@ -247,9 +250,9 @@ export function GameArena() {
                   }
                 }}
                 className={cn(
-                  "crate-3d absolute h-20 w-24 text-center text-[10px] font-black uppercase text-white transition sm:h-24 sm:w-32 sm:text-xs",
+                  "surface-slot absolute h-12 w-[4.8rem] text-center text-[8px] font-black uppercase text-white transition min-[430px]:h-14 min-[430px]:w-24 min-[430px]:text-[9px] sm:h-20 sm:w-32 sm:text-xs",
                   statusGlow(task?.status),
-                  near && "crate-near"
+                  near && "surface-slot-near"
                 )}
                 style={slotStyle}
               >
@@ -276,7 +279,7 @@ export function GameArena() {
 
           {nearest ? (
             <motion.div
-              className="absolute bottom-24 left-1/2 z-[140] -translate-x-1/2 rounded-md border border-cyan-300/30 bg-slate-950/85 px-4 py-2 text-center text-sm text-cyan-100 shadow-neon backdrop-blur"
+              className="absolute bottom-28 left-1/2 z-[140] hidden -translate-x-1/2 rounded-md border border-cyan-300/30 bg-slate-950/85 px-3 py-2 text-center text-xs text-cyan-100 shadow-neon backdrop-blur sm:bottom-24 sm:block sm:px-4 sm:text-sm"
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
             >
@@ -284,7 +287,7 @@ export function GameArena() {
             </motion.div>
           ) : null}
 
-          <TouchControls onMove={moveCharacter} />
+          <JoystickControls onMove={moveCharacter} />
 
           <AnimatePresence>
             {reward ? (
@@ -300,16 +303,13 @@ export function GameArena() {
           </AnimatePresence>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-700/60 bg-slate-950/35 p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-700/60 bg-slate-950/35 p-2 sm:gap-3 sm:p-3">
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => setModalOpen(true)}>
               <Plus size={17} /> New task
             </Button>
             <Button variant="ghost" onClick={() => setHelpOpen(true)}>
               <Keyboard size={17} /> Shortcuts
-            </Button>
-            <Button variant="ghost">
-              <Volume2 size={17} /> Sound
             </Button>
           </div>
           {selectedRemaining !== null ? (
@@ -320,12 +320,12 @@ export function GameArena() {
         </div>
       </section>
 
-      <aside className="glass rounded-lg border-cyan-300/20 p-4 xl:sticky xl:top-4 xl:self-start">
+      <aside className="glass rounded-lg border-cyan-300/20 p-3 sm:p-4 xl:sticky xl:top-4 xl:self-start">
         {selectedTask ? (
           <div className="grid gap-4">
             <div>
               <p className="text-xs uppercase tracking-[0.22em] text-cyan-200/80">Selected crate</p>
-              <h2 className="mt-2 text-2xl font-black text-white">{selectedTask.title}</h2>
+              <h2 className="mt-2 text-xl font-black text-white sm:text-2xl">{selectedTask.title}</h2>
               <p className="mt-2 text-sm leading-6 text-slate-300">{selectedTask.description || "No description added."}</p>
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -353,7 +353,7 @@ export function GameArena() {
           <div className="grid min-h-80 place-items-center text-center text-slate-400">
             <div>
               <p className="text-xs uppercase tracking-[0.22em] text-cyan-200/80">No crate selected</p>
-              <p className="mt-3 text-sm">Move near a crate and press E, or click any slot.</p>
+              <p className="mt-3 text-xs sm:text-sm">Move near a crate and press Enter, or click any slot.</p>
             </div>
           </div>
         )}
@@ -394,7 +394,7 @@ function DayCountdown() {
   }, []);
 
   return (
-    <span className="inline-flex items-center rounded-md border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-2xl font-bold text-cyan-100 shadow-neon">
+    <span className="inline-flex items-center rounded-md border border-cyan-300/30 bg-cyan-300/10 px-2.5 py-1 text-xl font-bold text-cyan-100 shadow-neon sm:px-3 sm:text-2xl">
       {remaining === null ? "86,400" : remaining.toLocaleString("en-IN")}s
     </span>
   );
@@ -402,30 +402,80 @@ function DayCountdown() {
 
 function HudStat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-md border border-slate-600/40 bg-slate-950/60 px-3 py-2">
-      <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className="truncate text-sm font-bold text-white">{value}</p>
+    <div className="rounded-md border border-slate-600/40 bg-slate-950/60 px-2 py-2 sm:px-3">
+      <p className="text-[8px] uppercase tracking-[0.14em] text-slate-500 sm:text-[10px] sm:tracking-[0.18em]">{label}</p>
+      <p className="truncate text-xs font-bold text-white sm:text-sm">{value}</p>
     </div>
   );
 }
 
-function TouchControls({ onMove }: { onMove: (dx: number, dy: number) => void }) {
+function JoystickControls({ onMove }: { onMove: (dx: number, dy: number) => void }) {
+  const padRef = useRef<HTMLDivElement | null>(null);
+  const intervalRef = useRef<number | null>(null);
+  const vectorRef = useRef({ x: 0, y: 0 });
+  const [knob, setKnob] = useState({ x: 0, y: 0 });
+
+  useEffect(() => stop, []);
+
+  function stop() {
+    vectorRef.current = { x: 0, y: 0 };
+    setKnob({ x: 0, y: 0 });
+    if (intervalRef.current) {
+      window.clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }
+
+  function update(event: PointerEvent<HTMLDivElement>) {
+    const rect = padRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const rawX = event.clientX - centerX;
+    const rawY = event.clientY - centerY;
+    const max = rect.width * 0.28;
+    const distance = Math.hypot(rawX, rawY);
+    const scale = distance > max ? max / distance : 1;
+    const x = rawX * scale;
+    const y = rawY * scale;
+    setKnob({ x, y });
+    vectorRef.current = {
+      x: Math.abs(x) < 6 ? 0 : (x / max) * 3.2,
+      y: Math.abs(y) < 6 ? 0 : (y / max) * 3.2
+    };
+  }
+
+  function start(event: PointerEvent<HTMLDivElement>) {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    update(event);
+    if (!intervalRef.current) {
+      intervalRef.current = window.setInterval(() => {
+        const vector = vectorRef.current;
+        if (vector.x || vector.y) onMove(vector.x, vector.y);
+      }, 55);
+    }
+  }
+
   return (
-    <div className="absolute bottom-4 right-4 grid grid-cols-3 gap-2 lg:hidden">
-      <span />
-      <Button variant="ghost" className="h-10 w-10 px-0" onClick={() => onMove(0, -5)} aria-label="Move up">
-        <ChevronUp size={18} />
-      </Button>
-      <span />
-      <Button variant="ghost" className="h-10 w-10 px-0" onClick={() => onMove(-5, 0)} aria-label="Move left">
-        <ChevronLeft size={18} />
-      </Button>
-      <Button variant="ghost" className="h-10 w-10 px-0" onClick={() => onMove(0, 5)} aria-label="Move down">
-        <ChevronDown size={18} />
-      </Button>
-      <Button variant="ghost" className="h-10 w-10 px-0" onClick={() => onMove(5, 0)} aria-label="Move right">
-        <ChevronRight size={18} />
-      </Button>
+    <div className="absolute bottom-1 right-3 z-[145] lg:hidden">
+      <div
+        ref={padRef}
+        className="joystick-pad"
+        onPointerDown={start}
+        onPointerMove={(event) => {
+          if (intervalRef.current) update(event);
+        }}
+        onPointerUp={stop}
+        onPointerCancel={stop}
+        onPointerLeave={stop}
+        role="application"
+        aria-label="Player movement joystick"
+      >
+        <div className="joystick-ring" />
+        <div className="joystick-knob" style={{ transform: `translate(calc(-50% + ${knob.x}px), calc(-50% + ${knob.y}px))` }}>
+          <CircleDot size={18} />
+        </div>
+      </div>
     </div>
   );
 }

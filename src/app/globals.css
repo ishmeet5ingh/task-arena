@@ -36,16 +36,26 @@ select {
   backdrop-filter: blur(18px);
 }
 
+.app-shell {
+  padding: calc(env(safe-area-inset-top, 0px) + 5.35rem) 0.75rem 0.75rem;
+}
+
+@media (min-width: 1024px) {
+  .app-shell {
+    padding-top: 1rem;
+  }
+}
+
 .arena-grid {
   background-image:
-    linear-gradient(rgba(45, 212, 191, 0.12) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(45, 212, 191, 0.12) 1px, transparent 1px);
-  background-size: 44px 44px;
+    linear-gradient(rgba(45, 212, 191, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(45, 212, 191, 0.08) 1px, transparent 1px);
+  background-size: 58px 58px;
 }
 
 .perspective-stage {
-  transform: perspective(1100px) rotateX(60deg) rotateZ(0deg);
-  transform-origin: center 75%;
+  transform: perspective(1150px) rotateX(49deg) rotateZ(0deg);
+  transform-origin: center 70%;
 }
 
 .scanline::after {
@@ -68,12 +78,12 @@ select {
 .arena-skyline {
   position: absolute;
   inset: 0 0 auto;
-  height: 46%;
+  height: 34%;
   background:
     linear-gradient(180deg, rgba(8, 13, 28, 0.1), rgba(8, 13, 28, 0.86)),
     repeating-linear-gradient(90deg, transparent 0 38px, rgba(148, 163, 184, 0.08) 38px 40px);
   clip-path: polygon(0 0, 100% 0, 100% 68%, 92% 63%, 86% 72%, 77% 56%, 68% 71%, 58% 62%, 52% 76%, 43% 58%, 34% 71%, 26% 60%, 19% 76%, 10% 64%, 0 70%);
-  opacity: 0.72;
+  opacity: 0.44;
   z-index: 1;
 }
 
@@ -81,12 +91,12 @@ select {
   position: absolute;
   left: 16%;
   right: 16%;
-  top: 33%;
-  height: 120px;
+  top: 20%;
+  height: 160px;
   border-radius: 999px;
   background: radial-gradient(ellipse, rgba(45, 212, 191, 0.16), rgba(250, 204, 21, 0.08) 42%, transparent 72%);
   filter: blur(28px);
-  opacity: 0.55;
+  opacity: 0.34;
   z-index: 2;
 }
 
@@ -115,10 +125,12 @@ select {
 
 .arena-floor {
   position: absolute;
-  left: 5%;
-  right: 5%;
-  top: 30%;
-  height: 70%;
+  left: 4%;
+  right: 4%;
+  top: 18%;
+  height: 76%;
+  transform: perspective(1200px) rotateX(10deg);
+  transform-origin: center bottom;
   z-index: 3;
 }
 
@@ -127,10 +139,12 @@ select {
   inset: 0;
   border: 1px solid rgba(45, 212, 191, 0.22);
   border-radius: 10px;
-  background-color: rgba(6, 10, 22, 0.94);
+  clip-path: polygon(8% 0, 92% 0, 100% 100%, 0 100%);
+  background-color: rgba(6, 10, 22, 0.84);
+  background-position: center;
   box-shadow:
-    inset 0 0 70px rgba(45, 212, 191, 0.1),
-    inset 0 -50px 90px rgba(0, 0, 0, 0.72),
+    inset 0 0 90px rgba(45, 212, 191, 0.08),
+    inset 0 -50px 90px rgba(0, 0, 0, 0.68),
     0 40px 100px rgba(0, 0, 0, 0.56);
 }
 
@@ -139,76 +153,96 @@ select {
   content: "";
   position: absolute;
   inset: 8%;
-  border: 1px solid rgba(45, 212, 191, 0.18);
+  border: 1px solid rgba(45, 212, 191, 0.12);
   border-radius: 8px;
+  clip-path: polygon(8% 0, 92% 0, 100% 100%, 0 100%);
 }
 
 .arena-floor-core::after {
   inset: 18%;
-  border-color: rgba(250, 204, 21, 0.16);
+  border-color: rgba(250, 204, 21, 0.1);
 }
 
 .arena-depth-fog {
   position: absolute;
   inset: auto 0 0;
-  height: 42%;
+  height: 24%;
   background: linear-gradient(180deg, transparent, rgba(3, 5, 13, 0.8));
   pointer-events: none;
   z-index: 120;
 }
 
-.crate-3d {
-  --crate-depth: 24px;
+.surface-slot {
   border-radius: 7px;
   outline: none;
-  transform: translate3d(-50%, -50%, 0) perspective(720px) rotateX(48deg) rotateZ(-2deg);
-  transform-style: preserve-3d;
+  overflow: hidden;
+  transform: translate3d(-50%, -50%, 0) perspective(1000px) rotateX(8deg);
   box-shadow:
-    0 var(--crate-depth) 34px rgba(0, 0, 0, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    0 10px 22px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.55);
   z-index: 20;
 }
 
-.crate-3d::before,
-.crate-3d::after {
+.surface-slot::before,
+.surface-slot::after {
   content: "";
   position: absolute;
   pointer-events: none;
-  border-radius: 6px;
+  border-radius: inherit;
 }
 
-.crate-3d::before {
+.surface-slot::before {
   inset: 0;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.22), transparent 28%),
-    linear-gradient(180deg, rgba(15, 23, 42, 0.32), rgba(2, 6, 23, 0.5));
-  transform: translateZ(var(--crate-depth));
-  border: 1px solid rgba(226, 232, 240, 0.16);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent 34%),
+    radial-gradient(circle at 50% 0%, rgba(45, 212, 191, 0.1), transparent 56%),
+    rgba(8, 14, 28, 0.64);
+  border: 1px solid rgba(45, 212, 191, 0.2);
 }
 
-.crate-3d::after {
-  inset: 12% 8%;
-  transform: translateZ(calc(var(--crate-depth) + 1px));
-  border: 1px solid rgba(45, 212, 191, 0.18);
-  box-shadow: inset 0 0 20px rgba(45, 212, 191, 0.08);
+.surface-slot::after {
+  inset: 9px;
+  border: 1px solid rgba(45, 212, 191, 0.16);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.1), rgba(2, 6, 23, 0.16));
 }
 
-.crate-3d:hover,
-.crate-near {
-  transform: translate3d(-50%, -58%, 0) perspective(720px) rotateX(48deg) rotateZ(-2deg) scale(1.04);
-  filter: saturate(1.18);
+.surface-slot:hover,
+.surface-slot-near {
+  transform: translate3d(-50%, -50%, 0) perspective(1000px) rotateX(8deg) scale(1.025);
+  filter: saturate(1.12);
 }
 
-.crate-near {
+.surface-slot-near {
   box-shadow:
-    0 28px 45px rgba(0, 0, 0, 0.48),
-    0 0 34px rgba(45, 212, 191, 0.46);
+    0 12px 26px rgba(0, 0, 0, 0.38),
+    0 0 28px rgba(45, 212, 191, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.11);
+}
+
+.surface-slot-empty {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(8, 13, 27, 0.5);
+}
+
+.surface-slot-active {
+  border: 1px solid rgba(45, 212, 191, 0.5);
+  background: rgba(45, 212, 191, 0.12);
+}
+
+.surface-slot-completed {
+  border: 1px solid rgba(190, 242, 100, 0.52);
+  background: rgba(132, 204, 22, 0.13);
+}
+
+.surface-slot-overdue {
+  border: 1px solid rgba(251, 113, 133, 0.52);
+  background: rgba(244, 63, 94, 0.13);
 }
 
 .crate-label {
   position: absolute;
-  inset: 18% 12% auto;
-  transform: translateZ(calc(var(--crate-depth) + 3px));
+  inset: 17% 12% auto;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.72);
   z-index: 1;
 }
@@ -216,9 +250,8 @@ select {
 .crate-slot {
   position: absolute;
   right: 10px;
-  bottom: 8px;
-  transform: translateZ(calc(var(--crate-depth) + 3px));
-  color: rgba(226, 232, 240, 0.5);
+  bottom: 7px;
+  color: rgba(226, 232, 240, 0.42);
   font-size: 10px;
   z-index: 1;
 }
@@ -312,24 +345,248 @@ select {
   right: 20px;
 }
 
+.joystick-pad {
+  position: relative;
+  width: 112px;
+  height: 112px;
+  touch-action: none;
+  border-radius: 999px;
+  border: 1px solid rgba(45, 212, 191, 0.28);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(45, 212, 191, 0.14), transparent 38%),
+    rgba(2, 6, 23, 0.72);
+  box-shadow:
+    0 18px 45px rgba(0, 0, 0, 0.45),
+    inset 0 0 24px rgba(45, 212, 191, 0.11);
+  backdrop-filter: blur(14px);
+}
+
+.joystick-ring {
+  position: absolute;
+  inset: 18px;
+  border-radius: inherit;
+  border: 1px solid rgba(226, 232, 240, 0.12);
+}
+
+.joystick-ring::before,
+.joystick-ring::after {
+  content: "";
+  position: absolute;
+  background: rgba(45, 212, 191, 0.18);
+}
+
+.joystick-ring::before {
+  left: 50%;
+  top: -10px;
+  bottom: -10px;
+  width: 1px;
+}
+
+.joystick-ring::after {
+  left: -10px;
+  right: -10px;
+  top: 50%;
+  height: 1px;
+}
+
+.joystick-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(207, 250, 254, 0.36);
+  background: rgba(15, 23, 42, 0.92);
+  color: rgb(207, 250, 254);
+  box-shadow: 0 0 24px rgba(45, 212, 191, 0.24);
+  transition: transform 80ms linear;
+}
+
 @media (max-width: 640px) {
-  .arena-floor {
-    left: -12%;
-    right: -12%;
-    top: 28%;
+  main.app-shell {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 5.35rem) !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
   }
 
-  .crate-3d {
-    --crate-depth: 18px;
+  body {
+    font-size: 14px;
+  }
+
+  .glass {
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.25);
+  }
+
+  .text-5xl,
+  .text-7xl {
+    font-size: 2.35rem !important;
+    line-height: 1.05 !important;
+  }
+
+  .text-4xl {
+    font-size: 2rem !important;
+    line-height: 1.1 !important;
+  }
+
+  .text-3xl {
+    font-size: 1.32rem !important;
+    line-height: 1.15 !important;
+  }
+
+  .text-2xl {
+    font-size: 1.14rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .text-xl {
+    font-size: 1.05rem !important;
+    line-height: 1.22 !important;
+  }
+
+  .text-lg {
+    font-size: 0.92rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .text-sm {
+    font-size: 0.78rem !important;
+    line-height: 1.35 !important;
+  }
+
+  .text-xs {
+    font-size: 0.68rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .p-6 {
+    padding: 0.85rem !important;
+  }
+
+  .p-5 {
+    padding: 0.75rem !important;
+  }
+
+  .p-4 {
+    padding: 0.65rem !important;
+  }
+
+  .p-3 {
+    padding: 0.65rem !important;
+  }
+
+  .px-4 {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  .py-3 {
+    padding-top: 0.6rem !important;
+    padding-bottom: 0.6rem !important;
+  }
+
+  .mt-6 {
+    margin-top: 1rem !important;
+  }
+
+  .mt-5 {
+    margin-top: 0.85rem !important;
+  }
+
+  .mt-4 {
+    margin-top: 0.75rem !important;
+  }
+
+  .gap-5 {
+    gap: 0.75rem !important;
+  }
+
+  .gap-4 {
+    gap: 0.62rem !important;
+  }
+
+  .gap-3 {
+    gap: 0.5rem !important;
+  }
+
+  .font-black {
+    font-weight: 700 !important;
+  }
+
+  .font-bold {
+    font-weight: 600 !important;
+  }
+
+  .font-semibold {
+    font-weight: 500 !important;
+  }
+
+  button,
+  .inline-flex.min-h-10 {
+    min-height: 2.35rem !important;
+  }
+
+  .min-h-80 {
+    min-height: 12rem !important;
+  }
+
+  .min-h-72 {
+    min-height: 11rem !important;
+  }
+
+  .arena-floor {
+    left: -8%;
+    right: -8%;
+    top: 19%;
   }
 
   .arena-depth-fog {
     height: 32%;
   }
+
+  .surface-slot::after {
+    inset: 6px;
+  }
+
+  .surface-slot {
+    left: var(--mobile-left) !important;
+    top: var(--mobile-top) !important;
+  }
+
+  .crate-label {
+    inset: 16% 10% auto;
+  }
+
+  .crate-slot {
+    right: 7px;
+    bottom: 5px;
+    font-size: 8px;
+  }
+
+  .arena-character {
+    transform: translate(-50%, -50%) scale(0.84);
+  }
+
+  .joystick-pad {
+    width: 82px;
+    height: 82px;
+  }
+
+  .joystick-ring {
+    inset: 14px;
+  }
+
+  .joystick-knob {
+    width: 36px;
+    height: 36px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .crate-3d,
+  .surface-slot,
   .arena-character {
     transition: none;
   }

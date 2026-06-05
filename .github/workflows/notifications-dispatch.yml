@@ -1,0 +1,37 @@
+name: Notification Dispatch
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: notification-dispatch
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  dispatch:
+    name: Call notification dispatcher
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    env:
+      DISPATCH_URL: ${{ vars.TASK_ARENA_URL || 'https://task-arena.vercel.app' }}/api/notifications/dispatch
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+
+    steps:
+      - name: Dispatch notifications
+        run: |
+          if [ -n "$CRON_SECRET" ]; then
+            curl --fail --show-error --silent \
+              --request GET \
+              --header "Authorization: Bearer $CRON_SECRET" \
+              "$DISPATCH_URL"
+          else
+            curl --fail --show-error --silent \
+              --request GET \
+              "$DISPATCH_URL"
+          fi

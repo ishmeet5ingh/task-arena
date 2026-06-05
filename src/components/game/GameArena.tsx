@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, Check, CircleDot, Edit3, Keyboard, Plus, Trash2 } from "lucide-react";
+import { Bell, Check, CircleDot, Clock3, Edit3, Keyboard, Plus, Trash2 } from "lucide-react";
 import { CSSProperties, PointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
@@ -21,10 +21,26 @@ const slots = Array.from({ length: 12 }, (_, index) => ({
   mobileY: 25 + Math.floor(index / 3) * 17
 }));
 
-function secondsRemaining(task?: ArenaTask | null) {
-  if (!task?.startTime || !task.durationMinutes) return null;
-  const end = new Date(task.startTime).getTime() + task.durationMinutes * 60 * 1000;
-  return Math.max(0, Math.floor((end - Date.now()) / 1000));
+function selectedTimerStatus(task?: ArenaTask | null) {
+  if (!task?.startTime) return null;
+
+  const start = new Date(task.startTime).getTime();
+  const now = Date.now();
+
+  if (task.status === "completed") return { icon: Check, label: "Completed" };
+  if (task.status === "overdue") return { icon: Bell, label: "Overdue" };
+  if (task.status === "pending" && start > now) {
+    return { icon: Clock3, label: `Starts in ${formatTime(Math.floor((start - now) / 1000))}` };
+  }
+
+  if (!task.durationMinutes) return { icon: Clock3, label: "Ready to start" };
+
+  const end = start + task.durationMinutes * 60 * 1000;
+  const remaining = Math.max(0, Math.floor((end - now) / 1000));
+  return {
+    icon: remaining > 0 ? Clock3 : Bell,
+    label: remaining > 0 ? `Time left ${formatTime(remaining)}` : "Time ended"
+  };
 }
 
 function statusGlow(status?: ArenaTask["status"]) {
@@ -199,7 +215,8 @@ export function GameArena() {
     upsertTask(data.task);
   }
 
-  const selectedRemaining = secondsRemaining(selectedTask);
+  const selectedTimer = selectedTimerStatus(selectedTask);
+  const SelectedTimerIcon = selectedTimer?.icon;
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -327,9 +344,9 @@ export function GameArena() {
               <Keyboard size={17} /> Shortcuts
             </Button>
           </div>
-          {selectedRemaining !== null ? (
+          {selectedTimer && SelectedTimerIcon ? (
             <div className="inline-flex items-center gap-2 rounded-md border border-cyan-300/30 bg-cyan-300/10 px-3 py-2 text-sm text-cyan-100">
-              <Bell size={16} /> {formatTime(selectedRemaining)}
+              <SelectedTimerIcon size={16} /> {selectedTimer.label}
             </div>
           ) : null}
         </div>

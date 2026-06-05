@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Gamepad2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
+
 export default function HomePage() {
   return (
     <main className="min-h-screen overflow-hidden">

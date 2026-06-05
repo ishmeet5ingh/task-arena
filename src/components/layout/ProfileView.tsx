@@ -4,6 +4,7 @@ import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { NotificationPermission } from "@/components/notifications/NotificationPermission";
 import { Button } from "@/components/ui/Button";
 import { AuthUser } from "@/types";
 
@@ -48,6 +49,9 @@ export function ProfileView() {
         <ProfileStat label="Points" value={user?.totalRewardPoints ?? 0} />
         <ProfileStat label="Streak" value={user?.currentStreak ?? 0} />
         <ProfileStat label="Best" value={user?.bestStreak ?? 0} />
+      </div>
+      <div className="mt-6">
+        <NotificationPermission initialEnabled={user?.notificationsEnabled ?? false} initialSettings={user?.notificationSettings} />
       </div>
       <div className="mt-6 h-3 overflow-hidden rounded-full bg-slate-800">
         <div className="h-full bg-cyan-300" style={{ width: `${((user?.totalRewardPoints ?? 0) % 250) / 2.5}%` }} />

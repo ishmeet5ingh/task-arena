@@ -23,6 +23,11 @@ const TaskSchema = new Schema(
     durationMinutes: { type: Number, min: 5, max: 720 },
     dueTime: { type: Date, index: true },
     completedAt: { type: Date },
+    notifications: {
+      startSentAt: { type: Date },
+      dueSoonSentAt: { type: Date },
+      overdueSentAt: { type: Date }
+    },
     taskDate: { type: Date, index: true },
     taskDateKey: { type: String, index: true },
     archivedAt: { type: Date, index: true }

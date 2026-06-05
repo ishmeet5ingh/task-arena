@@ -3,10 +3,10 @@ import { cn } from "@/lib/utils";
 
 export function FieldLabel({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="grid gap-2 text-sm text-slate-300">
+    <div className="grid gap-2 text-sm text-slate-300">
       <span>{label}</span>
       {children}
-    </label>
+    </div>
   );
 }
 

@@ -1,5 +1,13 @@
 export type TaskStatus = "pending" | "active" | "completed" | "overdue";
 export type TaskPriority = "low" | "medium" | "high" | "urgent";
+export type NotificationSettings = {
+  taskStart: boolean;
+  dueSoon: boolean;
+  overdue: boolean;
+  dailySummary: boolean;
+  streak: boolean;
+  reward: boolean;
+};
 
 export type ArenaTask = {
   _id: string;
@@ -29,6 +37,8 @@ export type AuthUser = {
   level: number;
   currentStreak: number;
   bestStreak: number;
+  notificationsEnabled?: boolean;
+  notificationSettings?: NotificationSettings;
 };
 
 export type ActivityAction =

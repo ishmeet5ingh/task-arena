@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { logActivity, requireUser, serializeDoc } from "@/lib/api";
 import { connectDB } from "@/lib/db";
 import { activeTaskFilter, ensureDailyRollover } from "@/lib/daily";
+import { trySendUserNotificationForSetting } from "@/lib/firebase/notifications";
 import { calculateLevel, isDeadlineBonusEligible } from "@/lib/utils";
 import Badge from "@/models/Badge";
 import Reward from "@/models/Reward";
@@ -56,6 +57,27 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
 
   await Reward.create({ userId: user._id, taskId: task._id, points: earned, reason: "Task completed" });
   await logActivity({ userId: String(user._id), action: "task_completed", taskId: String(task._id), metadata: { earned } });
+
+  await trySendUserNotificationForSetting(updatedUser, "reward", {
+    title: "Reward earned",
+    body: `+${earned} points for completing "${task.title}".`,
+    link: "/dashboard/rewards"
+  });
+
+  const remainingToday = await Task.countDocuments({
+    userId: user._id,
+    taskDateKey: todayKey,
+    ...activeTaskFilter,
+    status: { $ne: "completed" }
+  });
+
+  if (remainingToday === 0) {
+    await trySendUserNotificationForSetting(updatedUser, "streak", {
+      title: "Streak protected",
+      body: `All today's tasks are complete. Your streak is safe.`,
+      link: "/dashboard/game"
+    });
+  }
 
   const completedCount = await Task.countDocuments({ userId: user._id, status: "completed" });
   const badgeKeys = new Set<string>();

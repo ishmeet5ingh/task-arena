@@ -1,4 +1,5 @@
 import type { TaskPriority } from "@/types";
+import { mergeNotificationSettings, type NotificationSettings } from "@/lib/notificationSettings";
 
 export const priorityReward: Record<TaskPriority, number> = {
   low: 20,
@@ -36,6 +37,8 @@ export function publicUser(user: {
   level: number;
   currentStreak?: number;
   bestStreak?: number;
+  notificationsEnabled?: boolean;
+  notificationSettings?: Partial<NotificationSettings>;
 }) {
   return {
     _id: String(user._id),
@@ -45,6 +48,8 @@ export function publicUser(user: {
     totalRewardPoints: user.totalRewardPoints,
     level: user.level,
     currentStreak: user.currentStreak ?? 0,
-    bestStreak: user.bestStreak ?? 0
+    bestStreak: user.bestStreak ?? 0,
+    notificationsEnabled: user.notificationsEnabled ?? false,
+    notificationSettings: mergeNotificationSettings(user.notificationSettings)
   };
 }

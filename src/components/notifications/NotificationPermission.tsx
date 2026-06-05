@@ -4,7 +4,12 @@ import { BellRing, Send } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
-import { getFirebaseMessaging, getNotificationToken, listenForForegroundMessages } from "@/lib/firebase/client";
+import {
+  getFirebaseMessaging,
+  getFirebaseMessagingStatus,
+  getNotificationToken,
+  listenForForegroundMessages
+} from "@/lib/firebase/client";
 import {
   mergeNotificationSettings,
   notificationSettingLabels,
@@ -25,6 +30,7 @@ export function NotificationPermission({
   const [enabled, setEnabled] = useState(initialEnabled);
   const [settings, setSettings] = useState<NotificationSettings>(() => mergeNotificationSettings(initialSettings));
   const [supported, setSupported] = useState<boolean | null>(null);
+  const [supportMessage, setSupportMessage] = useState("Checking notification support...");
   const [permission, setPermission] = useState<BrowserNotificationPermission>("default");
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -41,21 +47,35 @@ export function NotificationPermission({
     async function boot() {
       if (typeof window === "undefined" || !("Notification" in window)) {
         setSupported(false);
+        setSupportMessage("This browser does not expose notification permission.");
         return;
       }
 
       setPermission(Notification.permission);
-      const messaging = await getFirebaseMessaging().catch(() => null);
-      setSupported(Boolean(messaging));
-
-      if (messaging) {
-        unsubscribe = listenForForegroundMessages(messaging, (payload) => {
-          const notification = (payload as { notification?: { title?: string; body?: string } }).notification;
-          toast.info(notification?.title ?? "Task Arena notification", {
-            description: notification?.body
-          });
-        });
+      if (Notification.permission === "denied") {
+        setSupported(true);
+        setSupportMessage("Notifications are blocked in Chrome settings for this app.");
+        return;
       }
+
+      const status = await getFirebaseMessagingStatus();
+      setSupported(status.supported);
+      setSupportMessage(status.reason);
+      if (!status.supported) return;
+
+      const messaging = await getFirebaseMessaging().catch(() => null);
+      if (!messaging) {
+        setSupported(false);
+        setSupportMessage("Firebase messaging could not start on this device.");
+        return;
+      }
+
+      unsubscribe = listenForForegroundMessages(messaging, (payload) => {
+        const notification = (payload as { notification?: { title?: string; body?: string } }).notification;
+        toast.info(notification?.title ?? "Task Arena notification", {
+          description: notification?.body
+        });
+      });
     }
 
     boot();
@@ -66,14 +86,19 @@ export function NotificationPermission({
     setLoading(true);
     try {
       if (supported !== true) {
-        if (!silent) toast.error("Notifications are not supported in this browser");
+        if (!silent) toast.error(supportMessage);
         return false;
       }
 
       const nextPermission = await Notification.requestPermission();
       setPermission(nextPermission);
       if (nextPermission !== "granted") {
-        if (!silent) toast.error("Notification permission was not granted");
+        const deniedMessage =
+          nextPermission === "denied"
+            ? "Notifications are blocked in Chrome settings for this app."
+            : "Notification permission was not granted";
+        setSupportMessage(deniedMessage);
+        if (!silent) toast.error(deniedMessage);
         return false;
       }
 
@@ -164,10 +189,12 @@ export function NotificationPermission({
           <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Notifications</p>
           <p className="mt-1 text-sm text-slate-300">
             {supported === false
-              ? "Not supported in this browser"
+              ? supportMessage
+              : permission === "denied"
+                ? "Notifications are blocked in Chrome settings for this app."
               : enabled || permission === "granted"
                 ? "Enabled on this device"
-                : "Enable task reminders on this device"}
+                : supportMessage}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

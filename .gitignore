@@ -1,0 +1,32 @@
+# dependencies
+node_modules
+
+# next
+.next
+out
+
+# production / test output
+dist
+coverage
+
+# env files
+.env
+.env*.local
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# typescript
+*.tsbuildinfo
+
+# vercel
+.vercel
+
+# os / editor
+.DS_Store
+.idea
+.vscode

@@ -1,0 +1,336 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  background: #060812;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(45, 212, 191, 0.16), transparent 32%),
+    radial-gradient(circle at 88% 4%, rgba(163, 230, 53, 0.12), transparent 28%),
+    linear-gradient(145deg, #050712 0%, #0b1020 46%, #050712 100%);
+  color: #e5edf7;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.glass {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.72);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(18px);
+}
+
+.arena-grid {
+  background-image:
+    linear-gradient(rgba(45, 212, 191, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(45, 212, 191, 0.12) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+.perspective-stage {
+  transform: perspective(1100px) rotateX(60deg) rotateZ(0deg);
+  transform-origin: center 75%;
+}
+
+.scanline::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.04), transparent);
+  background-size: 100% 6px;
+  opacity: 0.22;
+}
+
+.cinematic-arena {
+  isolation: isolate;
+  background:
+    linear-gradient(180deg, rgba(4, 8, 18, 0.5) 0%, rgba(6, 8, 18, 0.92) 52%, #03050d 100%),
+    radial-gradient(ellipse at 50% 20%, rgba(45, 212, 191, 0.18), transparent 42%);
+}
+
+.arena-skyline {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 46%;
+  background:
+    linear-gradient(180deg, rgba(8, 13, 28, 0.1), rgba(8, 13, 28, 0.86)),
+    repeating-linear-gradient(90deg, transparent 0 38px, rgba(148, 163, 184, 0.08) 38px 40px);
+  clip-path: polygon(0 0, 100% 0, 100% 68%, 92% 63%, 86% 72%, 77% 56%, 68% 71%, 58% 62%, 52% 76%, 43% 58%, 34% 71%, 26% 60%, 19% 76%, 10% 64%, 0 70%);
+  opacity: 0.72;
+  z-index: 1;
+}
+
+.arena-horizon {
+  position: absolute;
+  left: 16%;
+  right: 16%;
+  top: 33%;
+  height: 120px;
+  border-radius: 999px;
+  background: radial-gradient(ellipse, rgba(45, 212, 191, 0.16), rgba(250, 204, 21, 0.08) 42%, transparent 72%);
+  filter: blur(28px);
+  opacity: 0.55;
+  z-index: 2;
+}
+
+.arena-light {
+  position: absolute;
+  top: -12%;
+  width: 28%;
+  height: 78%;
+  background: linear-gradient(180deg, rgba(45, 212, 191, 0.24), transparent 72%);
+  filter: blur(18px);
+  opacity: 0.42;
+  transform-origin: top center;
+  z-index: 2;
+}
+
+.arena-light-left {
+  left: 10%;
+  transform: skewX(-22deg);
+}
+
+.arena-light-right {
+  right: 9%;
+  background: linear-gradient(180deg, rgba(250, 204, 21, 0.16), transparent 72%);
+  transform: skewX(21deg);
+}
+
+.arena-floor {
+  position: absolute;
+  left: 5%;
+  right: 5%;
+  top: 30%;
+  height: 70%;
+  z-index: 3;
+}
+
+.arena-floor-core {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(45, 212, 191, 0.22);
+  border-radius: 10px;
+  background-color: rgba(6, 10, 22, 0.94);
+  box-shadow:
+    inset 0 0 70px rgba(45, 212, 191, 0.1),
+    inset 0 -50px 90px rgba(0, 0, 0, 0.72),
+    0 40px 100px rgba(0, 0, 0, 0.56);
+}
+
+.arena-floor-core::before,
+.arena-floor-core::after {
+  content: "";
+  position: absolute;
+  inset: 8%;
+  border: 1px solid rgba(45, 212, 191, 0.18);
+  border-radius: 8px;
+}
+
+.arena-floor-core::after {
+  inset: 18%;
+  border-color: rgba(250, 204, 21, 0.16);
+}
+
+.arena-depth-fog {
+  position: absolute;
+  inset: auto 0 0;
+  height: 42%;
+  background: linear-gradient(180deg, transparent, rgba(3, 5, 13, 0.8));
+  pointer-events: none;
+  z-index: 120;
+}
+
+.crate-3d {
+  --crate-depth: 24px;
+  border-radius: 7px;
+  outline: none;
+  transform: translate3d(-50%, -50%, 0) perspective(720px) rotateX(48deg) rotateZ(-2deg);
+  transform-style: preserve-3d;
+  box-shadow:
+    0 var(--crate-depth) 34px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  z-index: 20;
+}
+
+.crate-3d::before,
+.crate-3d::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  border-radius: 6px;
+}
+
+.crate-3d::before {
+  inset: 0;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.22), transparent 28%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.32), rgba(2, 6, 23, 0.5));
+  transform: translateZ(var(--crate-depth));
+  border: 1px solid rgba(226, 232, 240, 0.16);
+}
+
+.crate-3d::after {
+  inset: 12% 8%;
+  transform: translateZ(calc(var(--crate-depth) + 1px));
+  border: 1px solid rgba(45, 212, 191, 0.18);
+  box-shadow: inset 0 0 20px rgba(45, 212, 191, 0.08);
+}
+
+.crate-3d:hover,
+.crate-near {
+  transform: translate3d(-50%, -58%, 0) perspective(720px) rotateX(48deg) rotateZ(-2deg) scale(1.04);
+  filter: saturate(1.18);
+}
+
+.crate-near {
+  box-shadow:
+    0 28px 45px rgba(0, 0, 0, 0.48),
+    0 0 34px rgba(45, 212, 191, 0.46);
+}
+
+.crate-label {
+  position: absolute;
+  inset: 18% 12% auto;
+  transform: translateZ(calc(var(--crate-depth) + 3px));
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.72);
+  z-index: 1;
+}
+
+.crate-slot {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  transform: translateZ(calc(var(--crate-depth) + 3px));
+  color: rgba(226, 232, 240, 0.5);
+  font-size: 10px;
+  z-index: 1;
+}
+
+.arena-character {
+  transform: translate(-50%, -50%);
+  transform-style: preserve-3d;
+  filter: drop-shadow(0 0 18px rgba(45, 212, 191, 0.35));
+}
+
+.character-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  width: 112px;
+  height: 24px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: radial-gradient(ellipse, rgba(45, 212, 191, 0.28), rgba(0, 0, 0, 0.08) 62%, transparent 72%);
+  filter: blur(2px);
+}
+
+.character-helmet {
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  width: 34px;
+  height: 30px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(207, 250, 254, 0.72);
+  border-radius: 50% 50% 42% 42%;
+  background:
+    linear-gradient(135deg, rgba(207, 250, 254, 0.95), rgba(45, 212, 191, 0.35) 42%, rgba(15, 23, 42, 0.85) 43%),
+    rgba(45, 212, 191, 0.18);
+  box-shadow: 0 0 22px rgba(45, 212, 191, 0.38);
+}
+
+.character-core {
+  position: absolute;
+  left: 50%;
+  top: 34px;
+  width: 42px;
+  height: 52px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(45, 212, 191, 0.62);
+  border-radius: 14px 14px 9px 9px;
+  background:
+    linear-gradient(90deg, transparent 0 14px, rgba(207, 250, 254, 0.55) 14px 17px, transparent 17px),
+    linear-gradient(145deg, rgba(45, 212, 191, 0.34), rgba(15, 23, 42, 0.92));
+  box-shadow:
+    inset 0 0 24px rgba(45, 212, 191, 0.18),
+    0 16px 32px rgba(0, 0, 0, 0.36);
+}
+
+.character-arm,
+.character-leg {
+  position: absolute;
+  border: 1px solid rgba(45, 212, 191, 0.48);
+  background: linear-gradient(180deg, rgba(45, 212, 191, 0.2), rgba(15, 23, 42, 0.9));
+}
+
+.character-arm {
+  top: 44px;
+  width: 12px;
+  height: 42px;
+  border-radius: 999px;
+}
+
+.character-arm-left {
+  left: 7px;
+  transform: rotate(13deg);
+}
+
+.character-arm-right {
+  right: 7px;
+  transform: rotate(-13deg);
+}
+
+.character-leg {
+  top: 80px;
+  width: 14px;
+  height: 36px;
+  border-radius: 999px 999px 8px 8px;
+}
+
+.character-leg-left {
+  left: 20px;
+}
+
+.character-leg-right {
+  right: 20px;
+}
+
+@media (max-width: 640px) {
+  .arena-floor {
+    left: -12%;
+    right: -12%;
+    top: 28%;
+  }
+
+  .crate-3d {
+    --crate-depth: 18px;
+  }
+
+  .arena-depth-fog {
+    height: 32%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crate-3d,
+  .arena-character {
+    transition: none;
+  }
+}

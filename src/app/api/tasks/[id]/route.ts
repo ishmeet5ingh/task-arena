@@ -38,9 +38,15 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     startTime: cleanDate(parsed.data.startTime),
     dueTime: cleanDate(parsed.data.dueTime)
   };
+  const $unset: Record<string, 1> = {};
+  if ("startTime" in parsed.data) $unset["notifications.startSentAt"] = 1;
+  if ("dueTime" in parsed.data) {
+    $unset["notifications.dueSoonSentAt"] = 1;
+    $unset["notifications.overdueSentAt"] = 1;
+  }
   const task = await Task.findOneAndUpdate(
     { _id: id, userId: user._id, taskDateKey: todayKey, ...activeTaskFilter },
-    update,
+    Object.keys($unset).length ? { $set: update, $unset } : update,
     { new: true }
   );
   if (!task) return NextResponse.json({ error: "Task not found" }, { status: 404 });

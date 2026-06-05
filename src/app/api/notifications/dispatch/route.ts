@@ -6,7 +6,6 @@ import type { NotificationSettings } from "@/lib/notificationSettings";
 import Task from "@/models/Task";
 import User from "@/models/User";
 
-
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -86,7 +85,7 @@ export async function GET(req: NextRequest) {
       activeTaskFilter,
       { $or: [{ "notifications.startSentAt": { $exists: false } }, { "notifications.startSentAt": null }] }
     ],
-    status: "pending",
+    status: { $in: ["pending", "active"] },
     startTime: { $lte: now }
   }).select("userId title");
   diagnostics.startEligible = startTasks.length;

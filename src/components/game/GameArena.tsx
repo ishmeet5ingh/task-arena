@@ -50,6 +50,7 @@ export function GameArena() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [reward, setReward] = useState<number | null>(null);
   const [tick, setTick] = useState(0);
+  const [isMobileArena, setIsMobileArena] = useState(false);
 
   const taskBySlot = useMemo(() => new Map(tasks.map((task) => [task.boxPosition, task])), [tasks]);
   const completed = tasks.filter((task) => task.status === "completed").length;
@@ -58,11 +59,13 @@ export function GameArena() {
   const nearest = useMemo(() => {
     let best = { slot: slots[0], dist: Infinity };
     for (const slot of slots) {
-      const dist = Math.hypot(slot.x - pos.x, slot.y - pos.y);
+      const slotX = isMobileArena ? slot.mobileX : slot.x;
+      const slotY = isMobileArena ? slot.mobileY : slot.y;
+      const dist = Math.hypot(slotX - pos.x, slotY - pos.y);
       if (dist < best.dist) best = { slot, dist };
     }
-    return best.dist < 18 ? best.slot : null;
-  }, [pos]);
+    return best.dist < (isMobileArena ? 10 : 11) ? best.slot : null;
+  }, [isMobileArena, pos]);
 
   async function refreshArena() {
     const [meRes, tasksRes] = await Promise.all([
@@ -87,6 +90,14 @@ export function GameArena() {
   useEffect(() => {
     refreshArena();
   }, [setTasks, setUser]);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 640px)");
+    const sync = () => setIsMobileArena(query.matches);
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
 
   useEffect(() => {
     const id = window.setInterval(() => setTick((value) => value + 1), 1000);
@@ -242,6 +253,11 @@ export function GameArena() {
                   if (dragged) moveTask(dragged, slot.index);
                 }}
                 onClick={() => {
+                  if (isMobileArena && nearest?.index !== slot.index) {
+                    toast.info("Move closer to interact with this slot");
+                    return;
+                  }
+
                   selectSlot(slot.index);
                   selectTask(task ?? null);
                   if (!task) {
@@ -263,7 +279,7 @@ export function GameArena() {
           })}
 
           <motion.div
-            className="arena-character absolute h-24 w-16 sm:h-28 sm:w-20"
+            className="arena-character absolute h-20 w-14 sm:h-24 sm:w-16"
             animate={{ left: `${pos.x}%`, top: `${pos.y}%`, scaleX: facing }}
             transition={{ type: "spring", stiffness: 240, damping: 25, mass: 0.75 }}
             style={{ zIndex: Math.round(pos.y) + 10 }}

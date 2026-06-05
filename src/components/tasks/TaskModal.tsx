@@ -83,14 +83,14 @@ export function TaskModal({
 
   return (
     <Modal open={open} title={title} onClose={onClose}>
-      <form onSubmit={submit} className="grid gap-4">
+      <form onSubmit={submit} className="grid gap-3 sm:gap-4">
         <FieldLabel label="Title">
           <Input name="title" defaultValue={defaults.title} required placeholder="Ship the sprint review" />
         </FieldLabel>
         <FieldLabel label="Description">
           <Textarea name="description" defaultValue={defaults.description} placeholder="Brief, acceptance criteria, notes..." />
         </FieldLabel>
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-3">
           <FieldLabel label="Priority">
             <Select name="priority" defaultValue={defaults.priority}>
               <option value="low">Low</option>
@@ -112,7 +112,7 @@ export function TaskModal({
             <Input name="durationMinutes" type="number" min={5} max={720} defaultValue={defaults.durationMinutes} />
           </FieldLabel>
         </div>
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-2">
           <FieldLabel label="Start time">
             <Input name="startTime" type="datetime-local" defaultValue={defaults.startTime} />
           </FieldLabel>

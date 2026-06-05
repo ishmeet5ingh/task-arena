@@ -215,9 +215,13 @@ select {
 
 .surface-slot-near {
   box-shadow:
-    0 12px 26px rgba(0, 0, 0, 0.38),
-    0 0 28px rgba(45, 212, 191, 0.32),
+    0 10px 22px rgba(0, 0, 0, 0.36),
+    0 0 18px rgba(45, 212, 191, 0.36),
     inset 0 1px 0 rgba(255, 255, 255, 0.11);
+}
+
+.surface-slot-near::before {
+  border-color: rgba(103, 232, 249, 0.58);
 }
 
 .surface-slot-empty {
@@ -265,9 +269,9 @@ select {
 .character-shadow {
   position: absolute;
   left: 50%;
-  bottom: -10px;
-  width: 112px;
-  height: 24px;
+  bottom: -8px;
+  width: 82px;
+  height: 18px;
   transform: translateX(-50%);
   border-radius: 999px;
   background: radial-gradient(ellipse, rgba(45, 212, 191, 0.28), rgba(0, 0, 0, 0.08) 62%, transparent 72%);
@@ -278,8 +282,8 @@ select {
   position: absolute;
   left: 50%;
   top: 6px;
-  width: 34px;
-  height: 30px;
+  width: 28px;
+  height: 25px;
   transform: translateX(-50%);
   border: 1px solid rgba(207, 250, 254, 0.72);
   border-radius: 50% 50% 42% 42%;
@@ -292,14 +296,14 @@ select {
 .character-core {
   position: absolute;
   left: 50%;
-  top: 34px;
-  width: 42px;
-  height: 52px;
+  top: 29px;
+  width: 34px;
+  height: 42px;
   transform: translateX(-50%);
   border: 1px solid rgba(45, 212, 191, 0.62);
   border-radius: 14px 14px 9px 9px;
   background:
-    linear-gradient(90deg, transparent 0 14px, rgba(207, 250, 254, 0.55) 14px 17px, transparent 17px),
+    linear-gradient(90deg, transparent 0 11px, rgba(207, 250, 254, 0.55) 11px 14px, transparent 14px),
     linear-gradient(145deg, rgba(45, 212, 191, 0.34), rgba(15, 23, 42, 0.92));
   box-shadow:
     inset 0 0 24px rgba(45, 212, 191, 0.18),
@@ -314,35 +318,35 @@ select {
 }
 
 .character-arm {
-  top: 44px;
-  width: 12px;
-  height: 42px;
+  top: 36px;
+  width: 10px;
+  height: 34px;
   border-radius: 999px;
 }
 
 .character-arm-left {
-  left: 7px;
+  left: 8px;
   transform: rotate(13deg);
 }
 
 .character-arm-right {
-  right: 7px;
+  right: 8px;
   transform: rotate(-13deg);
 }
 
 .character-leg {
-  top: 80px;
-  width: 14px;
-  height: 36px;
+  top: 66px;
+  width: 11px;
+  height: 29px;
   border-radius: 999px 999px 8px 8px;
 }
 
 .character-leg-left {
-  left: 20px;
+  left: 18px;
 }
 
 .character-leg-right {
-  right: 20px;
+  right: 18px;
 }
 
 .joystick-pad {
@@ -529,6 +533,21 @@ select {
     min-height: 2.35rem !important;
   }
 
+  input,
+  select {
+    min-height: 2.35rem !important;
+    font-size: 0.82rem !important;
+  }
+
+  textarea {
+    min-height: 4.8rem !important;
+    font-size: 0.82rem !important;
+  }
+
+  label {
+    gap: 0.35rem !important;
+  }
+
   .min-h-80 {
     min-height: 12rem !important;
   }
@@ -567,7 +586,7 @@ select {
   }
 
   .arena-character {
-    transform: translate(-50%, -50%) scale(0.84);
+    transform: translate(-50%, -50%) scale(0.78);
   }
 
   .joystick-pad {

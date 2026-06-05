@@ -25,6 +25,7 @@ const TaskSchema = new Schema(
     completedAt: { type: Date },
     notifications: {
       startSentAt: { type: Date },
+      endSentAt: { type: Date },
       dueSoonSentAt: { type: Date },
       overdueSentAt: { type: Date }
     },

@@ -13,6 +13,7 @@ const UserSchema = new Schema(
     notificationsEnabled: { type: Boolean, default: false },
     notificationSettings: {
       taskStart: { type: Boolean, default: true },
+      taskEnd: { type: Boolean, default: true },
       dueSoon: { type: Boolean, default: true },
       overdue: { type: Boolean, default: true },
       dailySummary: { type: Boolean, default: false },

@@ -2,6 +2,7 @@ export type TaskStatus = "pending" | "active" | "completed" | "overdue";
 export type TaskPriority = "low" | "medium" | "high" | "urgent";
 export type NotificationSettings = {
   taskStart: boolean;
+  taskEnd: boolean;
   dueSoon: boolean;
   overdue: boolean;
   dailySummary: boolean;

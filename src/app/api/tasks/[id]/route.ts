@@ -39,7 +39,11 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     dueTime: cleanDate(parsed.data.dueTime)
   };
   const $unset: Record<string, 1> = {};
-  if ("startTime" in parsed.data) $unset["notifications.startSentAt"] = 1;
+  if ("startTime" in parsed.data) {
+    $unset["notifications.startSentAt"] = 1;
+    $unset["notifications.endSentAt"] = 1;
+  }
+  if ("durationMinutes" in parsed.data) $unset["notifications.endSentAt"] = 1;
   if ("dueTime" in parsed.data) {
     $unset["notifications.dueSoonSentAt"] = 1;
     $unset["notifications.overdueSentAt"] = 1;

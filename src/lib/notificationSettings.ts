@@ -1,5 +1,6 @@
 export const notificationSettingDefaults = {
   taskStart: true,
+  taskEnd: true,
   dueSoon: true,
   overdue: true,
   dailySummary: false,
@@ -19,6 +20,11 @@ export const notificationSettingLabels: Array<{
     key: "taskStart",
     label: "Task start",
     description: "When a scheduled task starts."
+  },
+  {
+    key: "taskEnd",
+    label: "Task end",
+    description: "When a task timer ends."
   },
   {
     key: "dueSoon",

@@ -58,6 +58,7 @@ export async function GET(req: NextRequest) {
   const dueSoonUntil = new Date(now.getTime() + DUE_SOON_MINUTES * 60 * 1000);
   const counts = {
     start: 0,
+    end: 0,
     dueSoon: 0,
     overdue: 0,
     dailySummary: 0
@@ -69,6 +70,10 @@ export async function GET(req: NextRequest) {
     startUsersWithTokens: 0,
     startDisabled: 0,
     startSendFailures: 0,
+    endEligible: 0,
+    endUsersWithTokens: 0,
+    endDisabled: 0,
+    endSendFailures: 0,
     dueSoonEligible: 0,
     dueSoonUsersWithTokens: 0,
     dueSoonDisabled: 0,
@@ -106,7 +111,43 @@ export async function GET(req: NextRequest) {
       if (result.successCount > 0) counts.start += 1;
       if (result.failureCount > 0 || result.successCount === 0) diagnostics.startSendFailures += 1;
     }
-    if (!enabled || user) await Task.updateOne({ _id: task._id }, { $set: { "notifications.startSentAt": now } });
+    if (!enabled || user) await Task.updateOne({ _id: task._id }, { $set: { status: "active", "notifications.startSentAt": now } });
+  }
+
+  const candidateEndTasks = await Task.find({
+    taskDateKey: todayKey,
+    $and: [
+      activeTaskFilter,
+      { $or: [{ "notifications.endSentAt": { $exists: false } }, { "notifications.endSentAt": null }] }
+    ],
+    status: "active",
+    startTime: { $exists: true, $ne: null },
+    durationMinutes: { $exists: true, $ne: null }
+  }).select("userId title startTime durationMinutes");
+  const endTasks = candidateEndTasks.filter((task) => {
+    const start = task.startTime instanceof Date ? task.startTime.getTime() : new Date(task.startTime).getTime();
+    const durationMs = Number(task.durationMinutes) * 60 * 1000;
+    return Number.isFinite(start) && Number.isFinite(durationMs) && start + durationMs <= now.getTime();
+  });
+  diagnostics.endEligible = endTasks.length;
+
+  usersById = await loadUsers(endTasks.map((task) => task.userId));
+  for (const task of endTasks) {
+    const user = usersById.get(String(task.userId));
+    const enabled = notificationSettingEnabled(user, "taskEnd");
+    if (user) diagnostics.endUsersWithTokens += 1;
+    if (!enabled) diagnostics.endDisabled += 1;
+
+    if (user && enabled) {
+      const result = await trySendUserNotificationForSetting(user, "taskEnd", {
+        title: "Task timer ended",
+        body: `"${task.title}" timer has ended.`,
+        link: "/dashboard/game"
+      });
+      if (result.successCount > 0) counts.end += 1;
+      if (result.failureCount > 0 || result.successCount === 0) diagnostics.endSendFailures += 1;
+    }
+    if (!enabled || user) await Task.updateOne({ _id: task._id }, { $set: { "notifications.endSentAt": now } });
   }
 
   const dueSoonTasks = await Task.find({

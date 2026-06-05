@@ -87,6 +87,16 @@ export function GameArena() {
     }));
   }
 
+  function interactWithSlot(slotIndex: number, openEmpty = true) {
+    const task = taskBySlot.get(slotIndex) ?? null;
+    selectSlot(slotIndex);
+    selectTask(task);
+    if (!task && openEmpty) {
+      setEditingTask(null);
+      setModalOpen(true);
+    }
+  }
+
   useEffect(() => {
     refreshArena();
   }, [setTasks, setUser]);
@@ -129,13 +139,7 @@ export function GameArena() {
       if (["arrowleft", "a"].includes(key)) moveCharacter(-4, 0);
       if (["arrowright", "d"].includes(key)) moveCharacter(4, 0);
       if ((key === "e" || key === "enter") && nearest) {
-        const task = taskBySlot.get(nearest.index) ?? null;
-        selectSlot(nearest.index);
-        selectTask(task);
-        if (!task && key === "enter") {
-          setEditingTask(null);
-          setModalOpen(true);
-        }
+        interactWithSlot(nearest.index, key === "enter");
       }
       if ((key === "delete" || key === "backspace") && selectedTask) deleteTask(selectedTask);
     }
@@ -253,17 +257,7 @@ export function GameArena() {
                   if (dragged) moveTask(dragged, slot.index);
                 }}
                 onClick={() => {
-                  if (isMobileArena && nearest?.index !== slot.index) {
-                    toast.info("Move closer to interact with this slot");
-                    return;
-                  }
-
-                  selectSlot(slot.index);
-                  selectTask(task ?? null);
-                  if (!task) {
-                    setEditingTask(null);
-                    setModalOpen(true);
-                  }
+                  interactWithSlot(slot.index);
                 }}
                 className={cn(
                   "surface-slot absolute h-12 w-[4.8rem] text-center text-[8px] font-black uppercase text-white transition min-[430px]:h-14 min-[430px]:w-24 min-[430px]:text-[9px] sm:h-20 sm:w-32 sm:text-xs",
@@ -303,7 +297,12 @@ export function GameArena() {
             </motion.div>
           ) : null}
 
-          <JoystickControls onMove={moveCharacter} />
+          <JoystickControls
+            onMove={moveCharacter}
+            onInteract={() => {
+              if (nearest) interactWithSlot(nearest.index);
+            }}
+          />
 
           <AnimatePresence>
             {reward ? (
@@ -425,10 +424,12 @@ function HudStat({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-function JoystickControls({ onMove }: { onMove: (dx: number, dy: number) => void }) {
+function JoystickControls({ onMove, onInteract }: { onMove: (dx: number, dy: number) => void; onInteract: () => void }) {
   const padRef = useRef<HTMLDivElement | null>(null);
   const intervalRef = useRef<number | null>(null);
   const vectorRef = useRef({ x: 0, y: 0 });
+  const pointerStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const didMoveRef = useRef(false);
   const [knob, setKnob] = useState({ x: 0, y: 0 });
 
   useEffect(() => stop, []);
@@ -463,13 +464,28 @@ function JoystickControls({ onMove }: { onMove: (dx: number, dy: number) => void
 
   function start(event: PointerEvent<HTMLDivElement>) {
     event.currentTarget.setPointerCapture(event.pointerId);
+    pointerStartRef.current = { x: event.clientX, y: event.clientY, time: Date.now() };
+    didMoveRef.current = false;
     update(event);
     if (!intervalRef.current) {
       intervalRef.current = window.setInterval(() => {
         const vector = vectorRef.current;
-        if (vector.x || vector.y) onMove(vector.x, vector.y);
+        if (vector.x || vector.y) {
+          didMoveRef.current = true;
+          onMove(vector.x, vector.y);
+        }
       }, 55);
     }
+  }
+
+  function finish(event: PointerEvent<HTMLDivElement>) {
+    const startPoint = pointerStartRef.current;
+    const distance = startPoint ? Math.hypot(event.clientX - startPoint.x, event.clientY - startPoint.y) : Infinity;
+    const elapsed = startPoint ? Date.now() - startPoint.time : Infinity;
+    const shouldInteract = !didMoveRef.current && distance < 10 && elapsed < 320;
+    stop();
+    pointerStartRef.current = null;
+    if (shouldInteract) onInteract();
   }
 
   return (
@@ -481,7 +497,7 @@ function JoystickControls({ onMove }: { onMove: (dx: number, dy: number) => void
         onPointerMove={(event) => {
           if (intervalRef.current) update(event);
         }}
-        onPointerUp={stop}
+        onPointerUp={finish}
         onPointerCancel={stop}
         onPointerLeave={stop}
         role="application"

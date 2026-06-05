@@ -463,6 +463,8 @@ function JoystickControls({ onMove, onInteract }: { onMove: (dx: number, dy: num
   }
 
   function start(event: PointerEvent<HTMLDivElement>) {
+    event.preventDefault();
+    event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
     pointerStartRef.current = { x: event.clientX, y: event.clientY, time: Date.now() };
     didMoveRef.current = false;
@@ -479,6 +481,8 @@ function JoystickControls({ onMove, onInteract }: { onMove: (dx: number, dy: num
   }
 
   function finish(event: PointerEvent<HTMLDivElement>) {
+    event.preventDefault();
+    event.stopPropagation();
     const startPoint = pointerStartRef.current;
     const distance = startPoint ? Math.hypot(event.clientX - startPoint.x, event.clientY - startPoint.y) : Infinity;
     const elapsed = startPoint ? Date.now() - startPoint.time : Infinity;
@@ -495,11 +499,25 @@ function JoystickControls({ onMove, onInteract }: { onMove: (dx: number, dy: num
         className="joystick-pad"
         onPointerDown={start}
         onPointerMove={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
           if (intervalRef.current) update(event);
         }}
         onPointerUp={finish}
-        onPointerCancel={stop}
-        onPointerLeave={stop}
+        onPointerCancel={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          stop();
+        }}
+        onPointerLeave={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          stop();
+        }}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        }}
         role="application"
         aria-label="Player movement joystick"
       >

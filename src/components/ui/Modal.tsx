@@ -18,7 +18,7 @@ export function Modal({
   return (
     <AnimatePresence>
       {open ? (
-        <motion.div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+        <motion.div className="fixed inset-0 z-[300] grid place-items-center bg-black/70 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <motion.div
             className="glass max-h-[calc(100dvh-1.5rem)] w-full max-w-xl overflow-y-auto rounded-lg p-3 sm:p-5"
             initial={{ y: 24, scale: 0.98 }}

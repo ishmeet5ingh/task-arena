@@ -1,0 +1,38 @@
+{
+  "name": "Task Arena",
+  "short_name": "Task Arena",
+  "description": "A gamified productivity arena for daily tasks, streaks, rewards, and focus.",
+  "start_url": "/dashboard/game",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#060812",
+  "theme_color": "#07111f",
+  "categories": ["productivity", "games"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/maskable-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open Arena",
+      "short_name": "Arena",
+      "url": "/dashboard/game"
+    },
+    {
+      "name": "Open Tasks",
+      "short_name": "Tasks",
+      "url": "/dashboard/tasks"
+    }
+  ]
+}

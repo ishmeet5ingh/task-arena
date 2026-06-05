@@ -63,6 +63,22 @@ export async function GET(req: NextRequest) {
     overdue: 0,
     dailySummary: 0
   };
+  const diagnostics = {
+    todayKey,
+    checkedAt: now.toISOString(),
+    startEligible: 0,
+    startUsersWithTokens: 0,
+    startDisabled: 0,
+    startSendFailures: 0,
+    dueSoonEligible: 0,
+    dueSoonUsersWithTokens: 0,
+    dueSoonDisabled: 0,
+    dueSoonSendFailures: 0,
+    overdueEligible: 0,
+    overdueUsersWithTokens: 0,
+    overdueDisabled: 0,
+    overdueSendFailures: 0
+  };
 
   const startTasks = await Task.find({
     taskDateKey: todayKey,
@@ -73,19 +89,25 @@ export async function GET(req: NextRequest) {
     status: "pending",
     startTime: { $lte: now }
   }).select("userId title");
+  diagnostics.startEligible = startTasks.length;
 
   let usersById = await loadUsers(startTasks.map((task) => task.userId));
   for (const task of startTasks) {
     const user = usersById.get(String(task.userId));
-    if (user) {
-      await trySendUserNotificationForSetting(user, "taskStart", {
+    const enabled = notificationSettingEnabled(user, "taskStart");
+    if (user) diagnostics.startUsersWithTokens += 1;
+    if (!enabled) diagnostics.startDisabled += 1;
+
+    if (user && enabled) {
+      const result = await trySendUserNotificationForSetting(user, "taskStart", {
         title: "Task starting now",
         body: `"${task.title}" starts now.`,
         link: "/dashboard/game"
       });
+      if (result.successCount > 0) counts.start += 1;
+      if (result.failureCount > 0 || result.successCount === 0) diagnostics.startSendFailures += 1;
     }
-    await Task.updateOne({ _id: task._id }, { $set: { "notifications.startSentAt": now } });
-    if (user && notificationSettingEnabled(user, "taskStart")) counts.start += 1;
+    if (!enabled || user) await Task.updateOne({ _id: task._id }, { $set: { "notifications.startSentAt": now } });
   }
 
   const dueSoonTasks = await Task.find({
@@ -97,19 +119,25 @@ export async function GET(req: NextRequest) {
     status: { $in: ["pending", "active"] },
     dueTime: { $gt: now, $lte: dueSoonUntil }
   }).select("userId title dueTime");
+  diagnostics.dueSoonEligible = dueSoonTasks.length;
 
   usersById = await loadUsers(dueSoonTasks.map((task) => task.userId));
   for (const task of dueSoonTasks) {
     const user = usersById.get(String(task.userId));
-    if (user) {
-      await trySendUserNotificationForSetting(user, "dueSoon", {
+    const enabled = notificationSettingEnabled(user, "dueSoon");
+    if (user) diagnostics.dueSoonUsersWithTokens += 1;
+    if (!enabled) diagnostics.dueSoonDisabled += 1;
+
+    if (user && enabled) {
+      const result = await trySendUserNotificationForSetting(user, "dueSoon", {
         title: "Task due soon",
         body: `"${task.title}" is due in ${DUE_SOON_MINUTES} minutes.`,
         link: "/dashboard/game"
       });
+      if (result.successCount > 0) counts.dueSoon += 1;
+      if (result.failureCount > 0 || result.successCount === 0) diagnostics.dueSoonSendFailures += 1;
     }
-    await Task.updateOne({ _id: task._id }, { $set: { "notifications.dueSoonSentAt": now } });
-    if (user && notificationSettingEnabled(user, "dueSoon")) counts.dueSoon += 1;
+    if (!enabled || user) await Task.updateOne({ _id: task._id }, { $set: { "notifications.dueSoonSentAt": now } });
   }
 
   const overdueTasks = await Task.find({
@@ -121,27 +149,35 @@ export async function GET(req: NextRequest) {
     status: { $in: ["pending", "active"] },
     dueTime: { $lte: now }
   }).select("userId title");
+  diagnostics.overdueEligible = overdueTasks.length;
 
   usersById = await loadUsers(overdueTasks.map((task) => task.userId));
   for (const task of overdueTasks) {
     const user = usersById.get(String(task.userId));
-    if (user) {
-      await trySendUserNotificationForSetting(user, "overdue", {
+    const enabled = notificationSettingEnabled(user, "overdue");
+    if (user) diagnostics.overdueUsersWithTokens += 1;
+    if (!enabled) diagnostics.overdueDisabled += 1;
+
+    if (user && enabled) {
+      const result = await trySendUserNotificationForSetting(user, "overdue", {
         title: "Task overdue",
         body: `"${task.title}" was not completed on time.`,
         link: "/dashboard/game"
       });
+      if (result.successCount > 0) counts.overdue += 1;
+      if (result.failureCount > 0 || result.successCount === 0) diagnostics.overdueSendFailures += 1;
     }
-    await Task.updateOne(
-      { _id: task._id },
-      {
-        $set: {
-          status: "overdue",
-          "notifications.overdueSentAt": now
+    if (!enabled || user) {
+      await Task.updateOne(
+        { _id: task._id },
+        {
+          $set: {
+            status: "overdue",
+            "notifications.overdueSentAt": now
+          }
         }
-      }
-    );
-    if (user && notificationSettingEnabled(user, "overdue")) counts.overdue += 1;
+      );
+    }
   }
 
   if (getHourInTimeZone(now, IST_TIME_ZONE) >= DAILY_SUMMARY_HOUR_IST) {
@@ -173,7 +209,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, counts });
+  return NextResponse.json({ ok: true, counts, diagnostics });
 }
 
 export async function POST(req: NextRequest) {

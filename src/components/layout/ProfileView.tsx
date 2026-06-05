@@ -1,10 +1,16 @@
 "use client";
 
+import { LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/Button";
 import { AuthUser } from "@/types";
 
 export function ProfileView() {
+  const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/me").then(async (res) => {
@@ -12,17 +18,30 @@ export function ProfileView() {
     });
   }, []);
 
+  async function logout() {
+    setLoggingOut(true);
+    await fetch("/api/auth/logout", { method: "POST" });
+    toast.success("Logged out");
+    router.push("/login");
+    router.refresh();
+  }
+
   return (
     <section className="glass mx-auto max-w-3xl rounded-lg p-6">
       <p className="text-xs uppercase tracking-[0.22em] text-cyan-200/80">Pilot profile</p>
-      <div className="mt-5 flex flex-wrap items-center gap-5">
-        <div className="grid h-24 w-24 place-items-center rounded-lg border border-cyan-300/30 bg-cyan-300/15 text-4xl font-black text-cyan-100">
-          {user?.name?.charAt(0) ?? "P"}
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-5">
+        <div className="flex flex-wrap items-center gap-5">
+          <div className="grid h-24 w-24 place-items-center rounded-lg border border-cyan-300/30 bg-cyan-300/15 text-4xl font-black text-cyan-100">
+            {user?.name?.charAt(0) ?? "P"}
+          </div>
+          <div>
+            <h1 className="text-3xl font-black text-white">{user?.name ?? "Loading..."}</h1>
+            <p className="text-slate-400">{user?.email}</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-3xl font-black text-white">{user?.name ?? "Loading..."}</h1>
-          <p className="text-slate-400">{user?.email}</p>
-        </div>
+        <Button variant="ghost" onClick={logout} disabled={loggingOut}>
+          <LogOut size={17} /> {loggingOut ? "Logging out..." : "Logout"}
+        </Button>
       </div>
       <div className="mt-6 grid gap-3 sm:grid-cols-4">
         <ProfileStat label="Level" value={user?.level ?? 1} />

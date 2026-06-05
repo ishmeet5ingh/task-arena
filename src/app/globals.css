@@ -37,13 +37,21 @@ select {
 }
 
 .app-shell {
-  padding: calc(env(safe-area-inset-top, 0px) + 5.35rem) 0.75rem 0.75rem;
+  padding: calc(env(safe-area-inset-top, 0px) + 0.75rem) 0.75rem calc(env(safe-area-inset-bottom, 0px) + 5.65rem);
 }
 
 @media (min-width: 1024px) {
   .app-shell {
-    padding-top: 1rem;
+    padding: 1rem 1rem 1rem 7rem;
   }
+}
+
+.mobile-tabbar {
+  bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+.mobile-tabbar-item {
+  min-height: 3.25rem;
 }
 
 .arena-grid {
@@ -411,10 +419,10 @@ select {
 
 @media (max-width: 640px) {
   main.app-shell {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 5.35rem) !important;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 0.65rem) !important;
     padding-left: 0.75rem !important;
     padding-right: 0.75rem !important;
-    padding-bottom: 0.75rem !important;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5.55rem) !important;
   }
 
   body {

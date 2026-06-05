@@ -25,13 +25,17 @@ jobs:
     steps:
       - name: Dispatch notifications
         run: |
+          set -euo pipefail
+
           if [ -n "$CRON_SECRET" ]; then
-            curl --fail --show-error --silent \
+            response=$(curl --fail --show-error --silent --retry 1 --retry-delay 10 \
               --request GET \
               --header "Authorization: Bearer $CRON_SECRET" \
-              "$DISPATCH_URL"
+              "$DISPATCH_URL")
           else
-            curl --fail --show-error --silent \
+            response=$(curl --fail --show-error --silent --retry 1 --retry-delay 10 \
               --request GET \
-              "$DISPATCH_URL"
+              "$DISPATCH_URL")
           fi
+
+          echo "$response"

@@ -6,6 +6,7 @@ import { connectDB } from "@/lib/db";
 import User from "@/models/User";
 
 const COOKIE_NAME = "task_arena_token";
+const PERSISTENT_SESSION_MAX_AGE = 60 * 60 * 24 * 400;
 
 function jwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -27,7 +28,7 @@ export async function verifyPassword(password: string, hash: string) {
 }
 
 export function signAuthToken(payload: TokenPayload) {
-  return jwt.sign(payload, jwtSecret(), { expiresIn: "7d" });
+  return jwt.sign(payload, jwtSecret());
 }
 
 export function verifyAuthToken(token?: string) {
@@ -66,7 +67,7 @@ export function authCookie(token: string) {
     sameSite: "lax" as const,
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60 * 24 * 7
+    maxAge: PERSISTENT_SESSION_MAX_AGE
   };
 }
 

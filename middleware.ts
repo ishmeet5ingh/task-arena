@@ -17,7 +17,20 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+  if (token && isProtected) {
+    response.cookies.set({
+      name: "task_arena_token",
+      value: token,
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 400
+    });
+  }
+
+  return response;
 }
 
 export const config = {

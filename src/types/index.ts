@@ -49,6 +49,7 @@ export type ActivityAction =
   | "task_deleted"
   | "task_completed"
   | "timer_started"
+  | "timer_stopped"
   | "reward_claimed";
 
 export type DailyHistoryTask = {

@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, Check, CircleDot, Clock3, Edit3, Keyboard, Plus, Trash2 } from "lucide-react";
+import { Bell, Check, CircleDot, Clock3, Edit3, Keyboard, Plus, Square, Trash2 } from "lucide-react";
 import { CSSProperties, PointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
@@ -43,6 +43,53 @@ function selectedTimerStatus(task?: ArenaTask | null) {
   };
 }
 
+function formatDateTime(value?: number | string | null) {
+  if (!value) return "Not set";
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "Not set";
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(date);
+}
+
+function selectedTimerDetails(task?: ArenaTask | null, now = Date.now()) {
+  if (!task) return null;
+
+  const startMs = task.startTime ? new Date(task.startTime).getTime() : null;
+  const hasStart = startMs !== null && Number.isFinite(startMs);
+  const durationMs = task.durationMinutes ? task.durationMinutes * 60 * 1000 : null;
+  const endMs = hasStart && durationMs ? startMs + durationMs : null;
+  const remainingSeconds = endMs ? Math.max(0, Math.floor((endMs - now) / 1000)) : null;
+  const elapsedMs = hasStart ? Math.max(0, now - startMs) : 0;
+  const progressPercent =
+    task.status === "active" && durationMs ? Math.min(100, Math.max(0, (elapsedMs / durationMs) * 100)) : null;
+
+  let statusLabel = "Not started";
+  if (task.status === "completed") statusLabel = "Completed";
+  else if (task.status === "overdue") statusLabel = "Overdue";
+  else if (task.status === "active") statusLabel = remainingSeconds === 0 ? "Time ended" : "Running";
+  else if (hasStart && startMs > now) statusLabel = `Starts in ${formatTime(Math.floor((startMs - now) / 1000))}`;
+  else if (hasStart) statusLabel = "Ready to start";
+
+  return {
+    statusLabel,
+    startLabel: hasStart ? formatDateTime(startMs) : "Not started",
+    endLabel: endMs ? formatDateTime(endMs) : task.durationMinutes ? "Starts when timer runs" : "No duration set",
+    remainingLabel:
+      remainingSeconds !== null
+        ? remainingSeconds > 0
+          ? formatTime(remainingSeconds)
+          : "00:00"
+        : task.durationMinutes
+          ? `${task.durationMinutes} min planned`
+          : "No duration",
+    progressPercent
+  };
+}
+
 function statusGlow(status?: ArenaTask["status"]) {
   if (status === "completed") return "surface-slot-completed";
   if (status === "overdue") return "surface-slot-overdue";
@@ -67,6 +114,7 @@ export function GameArena() {
   const [reward, setReward] = useState<number | null>(null);
   const [tick, setTick] = useState(0);
   const [isMobileArena, setIsMobileArena] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const taskBySlot = useMemo(() => new Map(tasks.map((task) => [task.boxPosition, task])), [tasks]);
   const completed = tasks.filter((task) => task.status === "completed").length;
@@ -165,28 +213,54 @@ export function GameArena() {
   }, [nearest, selectedTask, taskBySlot]);
 
   async function startTask(task: ArenaTask, automatic = false) {
-    const res = await fetch(`/api/tasks/${task._id}/start`, { method: "PATCH" });
-    const data = await res.json();
-    if (!res.ok) {
-      if (!automatic) toast.error(data.error ?? "Could not start task");
-      return;
+    if (!automatic) setActionLoading(`start:${task._id}`);
+    try {
+      const res = await fetch(`/api/tasks/${task._id}/start`, { method: "PATCH" });
+      const data = await res.json();
+      if (!res.ok) {
+        if (!automatic) toast.error(data.error ?? "Could not start task");
+        return;
+      }
+      upsertTask(data.task);
+      toast.success(automatic ? `${task.title} has started` : "Timer started");
+    } finally {
+      if (!automatic) setActionLoading(null);
     }
-    upsertTask(data.task);
-    toast.success(automatic ? `${task.title} has started` : "Timer started");
+  }
+
+  async function stopTask(task: ArenaTask) {
+    setActionLoading(`stop:${task._id}`);
+    try {
+      const res = await fetch(`/api/tasks/${task._id}/stop`, { method: "PATCH" });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not stop timer");
+        return;
+      }
+      upsertTask(data.task);
+      toast.success("Timer stopped");
+    } finally {
+      setActionLoading(null);
+    }
   }
 
   async function completeTask(task: ArenaTask) {
-    const res = await fetch(`/api/tasks/${task._id}/complete`, { method: "PATCH" });
-    const data = await res.json();
-    if (!res.ok) {
-      toast.error(data.error ?? "Could not complete task");
-      return;
+    setActionLoading(`complete:${task._id}`);
+    try {
+      const res = await fetch(`/api/tasks/${task._id}/complete`, { method: "PATCH" });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not complete task");
+        return;
+      }
+      upsertTask(data.task);
+      if (data.user) setUser(data.user);
+      setReward(data.earned);
+      toast.success(`+${data.earned} reward points`);
+      window.setTimeout(() => setReward(null), 2400);
+    } finally {
+      setActionLoading(null);
     }
-    upsertTask(data.task);
-    if (data.user) setUser(data.user);
-    setReward(data.earned);
-    toast.success(`+${data.earned} reward points`);
-    window.setTimeout(() => setReward(null), 2400);
   }
 
   async function deleteTask(task: ArenaTask) {
@@ -217,6 +291,8 @@ export function GameArena() {
 
   const selectedTimer = selectedTimerStatus(selectedTask);
   const SelectedTimerIcon = selectedTimer?.icon;
+  const timerDetails = selectedTimerDetails(selectedTask);
+  const selectedActionLoading = selectedTask ? actionLoading?.endsWith(`:${selectedTask._id}`) : false;
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -352,12 +428,26 @@ export function GameArena() {
         </div>
       </section>
 
-      <aside className="glass rounded-lg border-cyan-300/20 p-3 sm:p-4 xl:sticky xl:top-4 xl:self-start">
+      <aside
+        className={cn(
+          "glass rounded-lg border-cyan-300/20 p-3 sm:p-4",
+          selectedTask
+            ? "fixed inset-x-3 bottom-3 z-[200] max-h-[72vh] overflow-y-auto shadow-neon xl:sticky xl:inset-auto xl:top-4 xl:self-start xl:max-h-none xl:overflow-visible"
+            : "hidden xl:block xl:sticky xl:top-4 xl:self-start"
+        )}
+      >
         {selectedTask ? (
           <div className="grid gap-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.22em] text-cyan-200/80">Selected crate</p>
+                <h2 className="mt-2 text-xl font-black text-white sm:text-2xl">{selectedTask.title}</h2>
+              </div>
+              <span className="rounded-md border border-cyan-300/30 bg-cyan-300/10 px-2.5 py-1 text-xs font-bold text-cyan-100">
+                Slot {selectedTask.boxPosition + 1}
+              </span>
+            </div>
             <div>
-              <p className="text-xs uppercase tracking-[0.22em] text-cyan-200/80">Selected crate</p>
-              <h2 className="mt-2 text-xl font-black text-white sm:text-2xl">{selectedTask.title}</h2>
               <p className="mt-2 text-sm leading-6 text-slate-300">{selectedTask.description || "No description added."}</p>
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -366,17 +456,48 @@ export function GameArena() {
               <HudStat label="Points" value={selectedTask.rewardPoints} />
               <HudStat label="Slot" value={selectedTask.boxPosition + 1} />
             </div>
+            {timerDetails ? (
+              <div className="grid gap-3 rounded-md border border-slate-600/40 bg-slate-950/60 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Timer</p>
+                    <p className="mt-1 text-sm font-bold text-white">{timerDetails.statusLabel}</p>
+                  </div>
+                  <div className="text-right text-sm font-bold text-cyan-100">{timerDetails.remainingLabel}</div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <TimerStamp label="Start" value={timerDetails.startLabel} />
+                  <TimerStamp label="End" value={timerDetails.endLabel} />
+                </div>
+                {timerDetails.progressPercent !== null ? (
+                  <div className="h-2.5 overflow-hidden rounded-full bg-slate-900">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-lime-300 to-amber-300 transition-[width]"
+                      style={{ width: `${timerDetails.progressPercent}%` }}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
             <div className="grid gap-2">
-              <Button onClick={() => startTask(selectedTask)} disabled={selectedTask.status === "completed" || selectedTask.status === "active"}>
+              <Button
+                onClick={() => startTask(selectedTask)}
+                disabled={selectedTask.status === "completed" || selectedTask.status === "active" || selectedActionLoading}
+              >
                 <Bell size={17} /> Start timer
               </Button>
-              <Button variant="success" onClick={() => completeTask(selectedTask)} disabled={selectedTask.status === "completed"}>
+              {selectedTask.status === "active" ? (
+                <Button variant="ghost" onClick={() => stopTask(selectedTask)} disabled={selectedActionLoading}>
+                  <Square size={16} /> Stop timer
+                </Button>
+              ) : null}
+              <Button variant="success" onClick={() => completeTask(selectedTask)} disabled={selectedTask.status === "completed" || selectedActionLoading}>
                 <Check size={17} /> Complete
               </Button>
-              <Button variant="ghost" onClick={() => { setEditingTask(selectedTask); setModalOpen(true); }}>
+              <Button variant="ghost" onClick={() => { setEditingTask(selectedTask); setModalOpen(true); }} disabled={selectedActionLoading}>
                 <Edit3 size={17} /> Edit
               </Button>
-              <Button variant="danger" onClick={() => deleteTask(selectedTask)}>
+              <Button variant="danger" onClick={() => deleteTask(selectedTask)} disabled={selectedActionLoading}>
                 <Trash2 size={17} /> Delete
               </Button>
             </div>
@@ -437,6 +558,15 @@ function HudStat({ label, value }: { label: string; value: string | number }) {
     <div className="rounded-md border border-slate-600/40 bg-slate-950/60 px-2 py-2 sm:px-3">
       <p className="text-[8px] uppercase tracking-[0.14em] text-slate-500 sm:text-[10px] sm:tracking-[0.18em]">{label}</p>
       <p className="truncate text-xs font-bold text-white sm:text-sm">{value}</p>
+    </div>
+  );
+}
+
+function TimerStamp({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-slate-700/60 bg-slate-950/70 px-2.5 py-2">
+      <p className="text-[9px] uppercase tracking-[0.16em] text-slate-500">{label}</p>
+      <p className="mt-1 text-xs font-bold text-slate-100">{value}</p>
     </div>
   );
 }

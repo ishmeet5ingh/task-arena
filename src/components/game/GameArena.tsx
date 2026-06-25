@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, Check, CircleDot, Clock3, Edit3, Keyboard, Plus, Square, Trash2 } from "lucide-react";
+import { ArrowLeft, Bell, Check, CircleDot, Clock3, Edit3, Keyboard, Plus, Square, Trash2, X } from "lucide-react";
 import { CSSProperties, PointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
@@ -22,20 +22,27 @@ const slots = Array.from({ length: 12 }, (_, index) => ({
 }));
 
 function selectedTimerStatus(task?: ArenaTask | null) {
-  if (!task?.startTime) return null;
+  if (!task) return null;
 
-  const start = new Date(task.startTime).getTime();
   const now = Date.now();
+  const start = task.startTime ? new Date(task.startTime).getTime() : null;
+  const hasStart = start !== null && Number.isFinite(start);
+  const savedElapsedSeconds = Math.max(0, task.timerElapsedSeconds ?? 0);
 
   if (task.status === "completed") return { icon: Check, label: "Completed" };
   if (task.status === "overdue") return { icon: Bell, label: "Overdue" };
-  if (task.status === "pending" && start > now) {
+  if (task.status === "pending" && hasStart && start > now) {
     return { icon: Clock3, label: `Starts in ${formatTime(Math.floor((start - now) / 1000))}` };
   }
 
+  if (task.status === "pending" && savedElapsedSeconds > 0) {
+    return { icon: Clock3, label: `Paused at ${formatTime(savedElapsedSeconds)}` };
+  }
+
+  if (!hasStart) return null;
   if (!task.durationMinutes) return { icon: Clock3, label: "Ready to start" };
 
-  const end = start + task.durationMinutes * 60 * 1000;
+  const end = start + task.durationMinutes * 60 * 1000 - savedElapsedSeconds * 1000;
   const remaining = Math.max(0, Math.floor((end - now) / 1000));
   return {
     icon: remaining > 0 ? Clock3 : Bell,
@@ -60,24 +67,28 @@ function selectedTimerDetails(task?: ArenaTask | null, now = Date.now()) {
 
   const startMs = task.startTime ? new Date(task.startTime).getTime() : null;
   const hasStart = startMs !== null && Number.isFinite(startMs);
+  const savedElapsedSeconds = Math.max(0, task.timerElapsedSeconds ?? 0);
+  const savedElapsedMs = savedElapsedSeconds * 1000;
   const durationMs = task.durationMinutes ? task.durationMinutes * 60 * 1000 : null;
-  const endMs = hasStart && durationMs ? startMs + durationMs : null;
-  const remainingSeconds = endMs ? Math.max(0, Math.floor((endMs - now) / 1000)) : null;
-  const elapsedMs = hasStart ? Math.max(0, now - startMs) : 0;
+  const activeElapsedMs = task.status === "active" && hasStart ? Math.max(0, now - startMs) : 0;
+  const elapsedMs = savedElapsedMs + activeElapsedMs;
+  const endMs = task.status === "active" && hasStart && durationMs ? startMs + durationMs - savedElapsedMs : null;
+  const remainingSeconds = durationMs ? Math.max(0, Math.floor((durationMs - elapsedMs) / 1000)) : null;
   const progressPercent =
-    task.status === "active" && durationMs ? Math.min(100, Math.max(0, (elapsedMs / durationMs) * 100)) : null;
+    durationMs && (task.status === "active" || savedElapsedSeconds > 0) ? Math.min(100, Math.max(0, (elapsedMs / durationMs) * 100)) : null;
 
   let statusLabel = "Not started";
   if (task.status === "completed") statusLabel = "Completed";
   else if (task.status === "overdue") statusLabel = "Overdue";
   else if (task.status === "active") statusLabel = remainingSeconds === 0 ? "Time ended" : "Running";
+  else if (savedElapsedSeconds > 0) statusLabel = "Paused";
   else if (hasStart && startMs > now) statusLabel = `Starts in ${formatTime(Math.floor((startMs - now) / 1000))}`;
   else if (hasStart) statusLabel = "Ready to start";
 
   return {
     statusLabel,
     startLabel: hasStart ? formatDateTime(startMs) : "Not started",
-    endLabel: endMs ? formatDateTime(endMs) : task.durationMinutes ? "Starts when timer runs" : "No duration set",
+    endLabel: endMs ? formatDateTime(endMs) : savedElapsedSeconds > 0 ? "Resume to update end" : task.durationMinutes ? "Starts when timer runs" : "No duration set",
     remainingLabel:
       remainingSeconds !== null
         ? remainingSeconds > 0
@@ -86,6 +97,7 @@ function selectedTimerDetails(task?: ArenaTask | null, now = Date.now()) {
         : task.durationMinutes
           ? `${task.durationMinutes} min planned`
           : "No duration",
+    elapsedLabel: formatTime(Math.floor(elapsedMs / 1000)),
     progressPercent
   };
 }
@@ -161,6 +173,11 @@ export function GameArena() {
     }
   }
 
+  function closeSelectedTask() {
+    selectTask(null);
+    selectSlot(null);
+  }
+
   useEffect(() => {
     refreshArena();
   }, [setTasks, setUser]);
@@ -205,7 +222,11 @@ export function GameArena() {
       if ((key === "e" || key === "enter") && nearest) {
         interactWithSlot(nearest.index, key === "enter");
       }
-      if ((key === "delete" || key === "backspace") && selectedTask) deleteTask(selectedTask);
+      if ((key === "escape" || key === "backspace") && selectedTask) {
+        event.preventDefault();
+        closeSelectedTask();
+      }
+      if (key === "delete" && selectedTask) deleteTask(selectedTask);
     }
 
     window.addEventListener("keydown", keydown);
@@ -295,7 +316,7 @@ export function GameArena() {
   const selectedActionLoading = selectedTask ? actionLoading?.endsWith(`:${selectedTask._id}`) : false;
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+    <div className="grid gap-4">
       <section className="glass overflow-hidden rounded-lg border-cyan-300/20">
         <div className="relative flex flex-wrap items-center justify-between gap-2 border-b border-slate-700/60 px-3 py-3 sm:gap-3 sm:px-4">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/70 to-transparent" />
@@ -428,89 +449,112 @@ export function GameArena() {
         </div>
       </section>
 
-      <aside
-        className={cn(
-          "glass rounded-lg border-cyan-300/20 p-3 sm:p-4",
-          selectedTask
-            ? "fixed inset-x-3 bottom-3 z-[200] max-h-[72vh] overflow-y-auto shadow-neon xl:sticky xl:inset-auto xl:top-4 xl:self-start xl:max-h-none xl:overflow-visible"
-            : "hidden xl:block xl:sticky xl:top-4 xl:self-start"
-        )}
-      >
+      <AnimatePresence>
         {selectedTask ? (
-          <div className="grid gap-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-cyan-200/80">Selected crate</p>
-                <h2 className="mt-2 text-xl font-black text-white sm:text-2xl">{selectedTask.title}</h2>
-              </div>
-              <span className="rounded-md border border-cyan-300/30 bg-cyan-300/10 px-2.5 py-1 text-xs font-bold text-cyan-100">
-                Slot {selectedTask.boxPosition + 1}
-              </span>
-            </div>
-            <div>
-              <p className="mt-2 text-sm leading-6 text-slate-300">{selectedTask.description || "No description added."}</p>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <HudStat label="Status" value={selectedTask.status} />
-              <HudStat label="Priority" value={selectedTask.priority} />
-              <HudStat label="Points" value={selectedTask.rewardPoints} />
-              <HudStat label="Slot" value={selectedTask.boxPosition + 1} />
-            </div>
-            {timerDetails ? (
-              <div className="grid gap-3 rounded-md border border-slate-600/40 bg-slate-950/60 p-3">
-                <div className="flex items-center justify-between gap-3">
+          <motion.div
+            className="fixed inset-0 z-[200] grid place-items-center bg-slate-950/72 p-3 backdrop-blur-sm sm:p-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) closeSelectedTask();
+            }}
+          >
+            <motion.aside
+              className="glass max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-lg border-cyan-300/20 p-3 shadow-neon sm:p-4"
+              initial={{ opacity: 0, y: 24, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.96 }}
+              transition={{ type: "spring", stiffness: 260, damping: 26 }}
+            >
+              <div className="grid gap-4">
+                <div className="flex items-start justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={closeSelectedTask}
+                    className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-slate-500/30 bg-slate-900/40 px-3 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-800/80"
+                    aria-label="Back to arena"
+                  >
+                    <ArrowLeft size={17} /> Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeSelectedTask}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-500/30 bg-slate-900/40 text-slate-200 transition hover:bg-slate-800/80"
+                    aria-label="Close selected crate"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Timer</p>
-                    <p className="mt-1 text-sm font-bold text-white">{timerDetails.statusLabel}</p>
+                    <p className="text-xs uppercase tracking-[0.22em] text-cyan-200/80">Selected crate</p>
+                    <h2 className="mt-2 text-xl font-black text-white sm:text-2xl">{selectedTask.title}</h2>
                   </div>
-                  <div className="text-right text-sm font-bold text-cyan-100">{timerDetails.remainingLabel}</div>
+                  <span className="rounded-md border border-cyan-300/30 bg-cyan-300/10 px-2.5 py-1 text-xs font-bold text-cyan-100">
+                    Slot {selectedTask.boxPosition + 1}
+                  </span>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <TimerStamp label="Start" value={timerDetails.startLabel} />
-                  <TimerStamp label="End" value={timerDetails.endLabel} />
+                <div>
+                  <p className="mt-2 text-sm leading-6 text-slate-300">{selectedTask.description || "No description added."}</p>
                 </div>
-                {timerDetails.progressPercent !== null ? (
-                  <div className="h-2.5 overflow-hidden rounded-full bg-slate-900">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-lime-300 to-amber-300 transition-[width]"
-                      style={{ width: `${timerDetails.progressPercent}%` }}
-                    />
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  <HudStat label="Status" value={selectedTask.status} />
+                  <HudStat label="Priority" value={selectedTask.priority} />
+                  <HudStat label="Points" value={selectedTask.rewardPoints} />
+                  <HudStat label="Slot" value={selectedTask.boxPosition + 1} />
+                </div>
+                {timerDetails ? (
+                  <div className="grid gap-3 rounded-md border border-slate-600/40 bg-slate-950/60 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Timer</p>
+                        <p className="mt-1 text-sm font-bold text-white">{timerDetails.statusLabel}</p>
+                      </div>
+                      <div className="text-right text-sm font-bold text-cyan-100">{timerDetails.remainingLabel}</div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <TimerStamp label="Start" value={timerDetails.startLabel} />
+                      <TimerStamp label="End" value={timerDetails.endLabel} />
+                      <TimerStamp label="Elapsed" value={timerDetails.elapsedLabel} />
+                    </div>
+                    {timerDetails.progressPercent !== null ? (
+                      <div className="h-2.5 overflow-hidden rounded-full bg-slate-900">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-lime-300 to-amber-300 transition-[width]"
+                          style={{ width: `${timerDetails.progressPercent}%` }}
+                        />
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Button
+                    onClick={() => startTask(selectedTask)}
+                    disabled={selectedTask.status === "completed" || selectedTask.status === "active" || selectedActionLoading}
+                  >
+                    <Bell size={17} /> {(selectedTask.timerElapsedSeconds ?? 0) > 0 ? "Resume timer" : "Start timer"}
+                  </Button>
+                  {selectedTask.status === "active" ? (
+                    <Button variant="ghost" onClick={() => stopTask(selectedTask)} disabled={selectedActionLoading}>
+                      <Square size={16} /> Pause timer
+                    </Button>
+                  ) : null}
+                  <Button variant="success" onClick={() => completeTask(selectedTask)} disabled={selectedTask.status === "completed" || selectedActionLoading}>
+                    <Check size={17} /> Complete
+                  </Button>
+                  <Button variant="ghost" onClick={() => { setEditingTask(selectedTask); setModalOpen(true); }} disabled={selectedActionLoading}>
+                    <Edit3 size={17} /> Edit
+                  </Button>
+                  <Button variant="danger" onClick={() => deleteTask(selectedTask)} disabled={selectedActionLoading}>
+                    <Trash2 size={17} /> Delete
+                  </Button>
+                </div>
               </div>
-            ) : null}
-            <div className="grid gap-2">
-              <Button
-                onClick={() => startTask(selectedTask)}
-                disabled={selectedTask.status === "completed" || selectedTask.status === "active" || selectedActionLoading}
-              >
-                <Bell size={17} /> Start timer
-              </Button>
-              {selectedTask.status === "active" ? (
-                <Button variant="ghost" onClick={() => stopTask(selectedTask)} disabled={selectedActionLoading}>
-                  <Square size={16} /> Stop timer
-                </Button>
-              ) : null}
-              <Button variant="success" onClick={() => completeTask(selectedTask)} disabled={selectedTask.status === "completed" || selectedActionLoading}>
-                <Check size={17} /> Complete
-              </Button>
-              <Button variant="ghost" onClick={() => { setEditingTask(selectedTask); setModalOpen(true); }} disabled={selectedActionLoading}>
-                <Edit3 size={17} /> Edit
-              </Button>
-              <Button variant="danger" onClick={() => deleteTask(selectedTask)} disabled={selectedActionLoading}>
-                <Trash2 size={17} /> Delete
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="grid min-h-80 place-items-center text-center text-slate-400">
-            <div>
-              <p className="text-xs uppercase tracking-[0.22em] text-cyan-200/80">No crate selected</p>
-              <p className="mt-3 text-xs sm:text-sm">Move near a crate and press Enter, or click any slot.</p>
-            </div>
-          </div>
-        )}
-      </aside>
+            </motion.aside>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <TaskModal
         open={modalOpen}

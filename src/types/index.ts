@@ -21,6 +21,7 @@ export type ArenaTask = {
   boxPosition: number;
   startTime?: string;
   durationMinutes?: number;
+  timerElapsedSeconds?: number;
   dueTime?: string;
   completedAt?: string;
   taskDateKey?: string;

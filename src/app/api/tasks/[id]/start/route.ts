@@ -17,7 +17,14 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   const now = new Date();
   const task = await Task.findOneAndUpdate(
     { _id: id, userId: user._id, taskDateKey: todayKey, ...activeTaskFilter, status: { $in: ["pending", "overdue"] } },
-    { status: "active", startTime: now, "notifications.startSentAt": now },
+    {
+      $set: {
+        status: "active",
+        startTime: now,
+        "notifications.startSentAt": now
+      },
+      $unset: { "notifications.endSentAt": 1 }
+    },
     { new: true }
   );
   if (!task) return NextResponse.json({ error: "Task not found or already completed" }, { status: 404 });

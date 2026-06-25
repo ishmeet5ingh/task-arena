@@ -21,6 +21,7 @@ const TaskSchema = new Schema(
     boxPosition: { type: Number, required: true, min: 0, max: 11 },
     startTime: { type: Date },
     durationMinutes: { type: Number, min: 5, max: 720 },
+    timerElapsedSeconds: { type: Number, default: 0, min: 0 },
     dueTime: { type: Date, index: true },
     completedAt: { type: Date },
     notifications: {

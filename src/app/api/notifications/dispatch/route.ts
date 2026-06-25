@@ -123,11 +123,12 @@ export async function GET(req: NextRequest) {
     status: "active",
     startTime: { $exists: true, $ne: null },
     durationMinutes: { $exists: true, $ne: null }
-  }).select("userId title startTime durationMinutes");
+  }).select("userId title startTime durationMinutes timerElapsedSeconds");
   const endTasks = candidateEndTasks.filter((task) => {
     const start = task.startTime instanceof Date ? task.startTime.getTime() : new Date(task.startTime).getTime();
     const durationMs = Number(task.durationMinutes) * 60 * 1000;
-    return Number.isFinite(start) && Number.isFinite(durationMs) && start + durationMs <= now.getTime();
+    const elapsedMs = Math.max(0, Number(task.timerElapsedSeconds ?? 0)) * 1000;
+    return Number.isFinite(start) && Number.isFinite(durationMs) && start + durationMs - elapsedMs <= now.getTime();
   });
   diagnostics.endEligible = endTasks.length;
 
